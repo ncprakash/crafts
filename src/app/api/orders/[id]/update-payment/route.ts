@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-type Params = {
-  params: {
+type Context = {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, context: Context) {
+  const { id } = await context.params;
+
   try {
-    const { id } = params;
     const body = await req.json();
     const { paymentStatus, paymentId, razorpayOrderId } = body;
 

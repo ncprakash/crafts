@@ -1,44 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-type Params = {
-  params: {
+type Context = {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-// GET - Get single product
-export async function GET(req: NextRequest, { params }: Params) {
+// GET - Fetch a single product by ID
+export async function GET(req: NextRequest, context: Context) {
+  const { id } = await context.params;
+
   try {
-    const { id } = params;
     const product = await db.product.findUnique({
       where: { id },
       include: {
-        category: true
+        category: {
+          select: { name: true }
+        }
       }
     });
 
     if (!product) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Error fetching product:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch product' },
-      { status: 500 }
-    );
+    console.error('Error fetching product by ID:', error);
+    return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
   }
 }
 
 // PUT - Update product
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, context: Context) {
+  const { id } = await context.params;
+
   try {
-    const { id } = params;
     const body = await req.json();
     const {
       name,
@@ -82,9 +80,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 // DELETE - Delete product
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, context: Context) {
+  const { id } = await context.params;
+
   try {
-    const { id } = params;
     await db.product.delete({
       where: { id }
     });
