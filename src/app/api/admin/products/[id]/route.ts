@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // GET - Fetch a single product by ID
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
 
   try {
     const product = await db.product.findUnique({
@@ -30,11 +27,8 @@ export async function GET(
 }
 
 // PUT - Update product
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
 
   try {
     const body = await req.json();
@@ -47,10 +41,9 @@ export async function PUT(
       description,
       tags,
       featured,
-      images
+      images,
     } = body;
 
-    // Generate slug from name
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     const product = await db.product.update({
@@ -65,38 +58,29 @@ export async function PUT(
         tags,
         featured: featured || false,
         slug,
-        images
-      }
+        images,
+      },
     });
 
     return NextResponse.json(product);
   } catch (error) {
     console.error('Error updating product:', error);
-    return NextResponse.json(
-      { error: 'Failed to update product' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
   }
 }
 
 // DELETE - Delete product
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
 
   try {
     await db.product.delete({
-      where: { id }
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete product' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
-} 
+}

@@ -14,8 +14,6 @@
     "NEXTAUTH_SECRET": "@nextauth-secret",
     "NEXTAUTH_URL": "@nextauth-url",
     "EMAIL_USER": "@email-user",
-    "EMAIL_PASS": "@email-pass",
-    "RAZORPAY_KEY_ID": "@razorpay-key-id",
-    "RAZORPAY_KEY_SECRET": "@razorpay-key-secret"
+    "EMAIL_PASS": "@email-pass"
   }
 } 

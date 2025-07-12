@@ -186,150 +186,43 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Handle payment based on selected method
-      if (paymentMethod === 'online') {
-        // Create Razorpay order for online payment
-        const paymentResponse = await fetch('/api/payment/create-order', {
-          method: 'POST',
+      // Process order (Cash on Delivery only)
+      try {
+        // Update order status for COD
+        await fetch(`/api/orders/${orderResult.order.id}/update-payment`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            amount: total,
-            currency: 'INR',
-            receipt: orderResult.order.id,
+            paymentStatus: 'pending',
+            status: 'processing',
           }),
         });
 
-        const paymentResult = await paymentResponse.json();
-        console.log('Payment order response:', paymentResult);
-
-        if (!paymentResponse.ok) {
-          setError(paymentResult.error || 'Failed to create payment order');
-          return;
-        }
-
-        // Initialize Razorpay payment
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: paymentResult.amount,
-          currency: paymentResult.currency,
-          name: 'Gunnal Crafts',
-          description: 'Order Payment',
-          order_id: paymentResult.orderId,
-          handler: async function (response: any) {
-            try {
-              // Verify payment
-              const verifyResponse = await fetch('/api/payment/verify', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              });
-
-              const verifyResult = await verifyResponse.json();
-
-              if (verifyResponse.ok && verifyResult.verified) {
-                // Update order payment status
-                try {
-                  await fetch(`/api/orders/${orderResult.order.id}/update-payment`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      paymentId: response.razorpay_payment_id,
-                      razorpayOrderId: response.razorpay_order_id,
-                      paymentStatus: 'paid',
-                    }),
-                  });
-                } catch (error) {
-                  console.log('Error updating payment status:', error);
-                }
-
-                              // Payment successful - clear cart and show success
-              await clearServerCart();
-                
-                setOrderSuccess(true);
-                setFormData({
-                  first: '', last: '', email: '', phone: '', address: '',
-                  city: '', zip: '', state: '', country: '', coupon: ''
-                });
-                setError('');
-                
-                // Start countdown
-                const countdownInterval = setInterval(() => {
-                  setCountdown((prev) => {
-                    if (prev <= 1) {
-                      clearInterval(countdownInterval);
-                      return 0;
-                    }
-                    return prev - 1;
-                  });
-                }, 1000);
-              } else {
-                setError('Payment verification failed');
-              }
-            } catch (error) {
-              setError('Payment verification failed');
+        // Clear cart and show success
+        await clearServerCart();
+        
+        setOrderSuccess(true);
+        setFormData({
+          first: '', last: '', email: '', phone: '', address: '',
+          city: '', zip: '', state: '', country: '', coupon: ''
+        });
+        setError('');
+        
+        // Start countdown
+        const countdownInterval = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(countdownInterval);
+              return 0;
             }
-          },
-          prefill: {
-            name: `${formData.first} ${formData.last}`,
-            email: formData.email,
-            contact: formData.phone,
-          },
-          theme: {
-            color: '#FDC93B',
-          },
-        };
-
-        const razorpay = new (window as any).Razorpay(options);
-        razorpay.open();
-      } else {
-        // Cash on Delivery - directly process order
-        try {
-          // Update order status for COD
-          await fetch(`/api/orders/${orderResult.order.id}/update-payment`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              paymentStatus: 'pending',
-              status: 'processing',
-            }),
+            return prev - 1;
           });
-
-          // Clear cart and show success
-          await clearServerCart();
-          
-          setOrderSuccess(true);
-          setFormData({
-            first: '', last: '', email: '', phone: '', address: '',
-            city: '', zip: '', state: '', country: '', coupon: ''
-          });
-          setError('');
-          
-          // Start countdown
-          const countdownInterval = setInterval(() => {
-            setCountdown((prev) => {
-              if (prev <= 1) {
-                clearInterval(countdownInterval);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-        } catch (error) {
-          console.error('Error processing COD order:', error);
-          setError('Failed to process COD order');
-        }
+        }, 1000);
+      } catch (error) {
+        console.error('Error processing COD order:', error);
+        setError('Failed to process COD order');
       }
 
     } catch (error) {
@@ -375,10 +268,7 @@ export default function CheckoutPage() {
             </div>
                             <h2 className="text-2xl font-bold text-[#0A1D44] mb-2">🎉 Order Placed Successfully!</h2>
                 <p className="text-gray-600 mb-4">
-                  {paymentMethod === 'online' 
-                    ? 'Your payment has been processed successfully and your order is being processed by our team.'
-                    : 'Your order has been placed successfully. Please keep the payment ready for cash on delivery.'
-                  }
+                  Your order has been placed successfully. Please keep the payment ready for cash on delivery.
                 </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-blue-700">
@@ -399,11 +289,9 @@ export default function CheckoutPage() {
           
           <div className="text-sm text-gray-500">
             <p>Redirecting to dashboard in {countdown} seconds...</p>
-            {paymentMethod === 'cod' && (
-              <p className="mt-2 text-orange-600">
-                <strong>Note:</strong> Additional COD charges may apply
-              </p>
-            )}
+            <p className="mt-2 text-orange-600">
+              <strong>Note:</strong> Additional COD charges may apply
+            </p>
             <p className="mt-2">
               <strong>Need help?</strong> Contact our support team at support@gunnalcrafts.com
             </p>

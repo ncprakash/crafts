@@ -3,9 +3,9 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,7 +48,7 @@ export default function DashboardPage() {
                 onClick={() => setShowOrderSuccess(false)}
                 className="absolute top-4 right-4 text-green-600 hover:text-green-800 text-xl font-bold"
               >
-                ×
+                &times;
               </button>
               
               <div className="flex items-start space-x-4">
@@ -127,5 +127,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <DashboardPageContent />
+    </Suspense>
   );
 } 

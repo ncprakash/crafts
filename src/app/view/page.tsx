@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
@@ -32,7 +32,7 @@ interface Testimonial {
   productName: string;
 }
 
-export default function ViewPage() {
+function ViewPageContent() {
   const searchParams = useSearchParams();
   const productId = searchParams.get('id');
   const [product, setProduct] = useState<Product | null>(null);
@@ -378,5 +378,27 @@ export default function ViewPage() {
         onClose={() => setToast({ ...toast, show: false })}
       />
     </section>
+  );
+}
+
+export default function ViewPage() {
+  return (
+    <Suspense fallback={
+      <section className="min-h-screen relative flex justify-center items-center">
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0A1D44] via-[#1e3a8a] to-[#3730a3]">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-full h-full" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundSize: '60px 60px'
+            }}></div>
+          </div>
+        </div>
+        <div className="relative z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FDC93B]"></div>
+        </div>
+      </section>
+    }>
+      <ViewPageContent />
+    </Suspense>
   );
 }

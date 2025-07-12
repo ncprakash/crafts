@@ -1,10 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { motion } from 'framer-motion';
-import { Star, Heart, ShoppingCart, ArrowLeft, Share2, MessageCircle } from 'lucide-react';
+import { Star, Heart, ShoppingCart, ArrowLeft, Share2, MessageCircle, Package, Truck, Shield } from 'lucide-react';
 import Link from 'next/link';
 import Toast from '@/components/Toast';
 
@@ -32,7 +32,7 @@ interface Testimonial {
   productId: string;
 }
 
-export default function ProductDetails() {
+function ProductDetailsContent() {
   const params = useParams();
   const productId = params.id as string;
   const [product, setProduct] = useState<Product | null>(null);
@@ -290,12 +290,28 @@ export default function ProductDetails() {
               {/* Stock Status */}
               <div className="mb-6">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  product.stock > 0 
+                  Number(product.stock) > 0 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                  {Number(product.stock) > 0 ? `${product.stock} in stock` : 'Out of stock'}
                 </span>
+              </div>
+
+              {/* Features */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Package className="w-4 h-4 text-[#FDC93B]" />
+                  <span>Handmade</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Truck className="w-4 h-4 text-[#FDC93B]" />
+                  <span>Free Shipping</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Shield className="w-4 h-4 text-[#FDC93B]" />
+                  <span>Quality Assured</span>
+                </div>
               </div>
 
               {/* Quantity and Add to Cart */}
@@ -382,5 +398,13 @@ export default function ProductDetails() {
         onClose={() => setToast({ ...toast, show: false })}
       />
     </section>
+  );
+}
+
+export default function ProductDetails() {
+  return (
+    <Suspense fallback={<section className="min-h-screen relative flex justify-center items-center"><div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0A1D44] via-[#1e3a8a] to-[#3730a3]"></div><div className="relative z-10"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FDC93B]"></div></div></section>}>
+      <ProductDetailsContent />
+    </Suspense>
   );
 } 

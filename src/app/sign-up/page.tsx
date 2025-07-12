@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
 
@@ -9,7 +9,7 @@ import SignUpForm from '@/components/SignUpForm';
 
 gsap.registerPlugin(MotionPathPlugin);
 
-function SigninPage() {
+function SignupPageContent() {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -122,12 +122,16 @@ function SigninPage() {
 
       {/* Your Form */}
       <div className='z-30'>
-
-      
-      <SignUpForm/>
+        <SignUpForm/>
       </div>
     </div>
   );
 }
 
-export default SigninPage;
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <SignupPageContent />
+    </Suspense>
+  );
+}
