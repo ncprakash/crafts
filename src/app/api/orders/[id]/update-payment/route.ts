@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function PUT(request: NextRequest, context: any) {
+export async function PUT(request: NextRequest) {
   try {
-    const { id } = await context.params;
+    const id = request.nextUrl.pathname.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
+    }
+
     const body = await request.json();
     const { paymentStatus, paymentId, razorpayOrderId } = body;
 

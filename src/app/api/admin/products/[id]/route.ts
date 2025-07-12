@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // GET - Get single product
-export async function GET(request: NextRequest, context: any) {
+export async function GET(request: NextRequest) {
   try {
-    const { id } = await context.params;
+    const id = request.nextUrl.pathname.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
+    }
+
     const product = await db.product.findUnique({
       where: { id },
       include: {
@@ -30,9 +34,13 @@ export async function GET(request: NextRequest, context: any) {
 }
 
 // PUT - Update product
-export async function PUT(request: NextRequest, context: any) {
+export async function PUT(request: NextRequest) {
   try {
-    const { id } = await context.params;
+    const id = request.nextUrl.pathname.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -76,9 +84,13 @@ export async function PUT(request: NextRequest, context: any) {
 }
 
 // DELETE - Delete product
-export async function DELETE(request: NextRequest, context: any) {
+export async function DELETE(request: NextRequest) {
   try {
-    const { id } = await context.params;
+    const id = request.nextUrl.pathname.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
+    }
+
     await db.product.delete({
       where: { id }
     });
