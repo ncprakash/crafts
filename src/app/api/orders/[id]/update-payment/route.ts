@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function PUT(request: NextRequest) {
-  try {
-    const id = request.nextUrl.pathname.split('/').pop();
-    if (!id) {
-      return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
-    }
+type Params = {
+  params: {
+    id: string;
+  };
+};
 
-    const body = await request.json();
+export async function PUT(req: NextRequest, { params }: Params) {
+  try {
+    const { id } = params;
+    const body = await req.json();
     const { paymentStatus, paymentId, razorpayOrderId } = body;
 
     const order = await db.order.update({

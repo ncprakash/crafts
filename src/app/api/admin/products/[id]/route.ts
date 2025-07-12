@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// GET - Get single product
-export async function GET(request: NextRequest) {
-  try {
-    const id = request.nextUrl.pathname.split('/').pop();
-    if (!id) {
-      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
-    }
+type Params = {
+  params: {
+    id: string;
+  };
+};
 
+// GET - Get single product
+export async function GET(req: NextRequest, { params }: Params) {
+  try {
+    const { id } = params;
     const product = await db.product.findUnique({
       where: { id },
       include: {
@@ -34,14 +36,10 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT - Update product
-export async function PUT(request: NextRequest) {
+export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const id = request.nextUrl.pathname.split('/').pop();
-    if (!id) {
-      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
-    }
-
-    const body = await request.json();
+    const { id } = params;
+    const body = await req.json();
     const {
       name,
       categoryId,
@@ -84,13 +82,9 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE - Delete product
-export async function DELETE(request: NextRequest) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const id = request.nextUrl.pathname.split('/').pop();
-    if (!id) {
-      return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
-    }
-
+    const { id } = params;
     await db.product.delete({
       where: { id }
     });
