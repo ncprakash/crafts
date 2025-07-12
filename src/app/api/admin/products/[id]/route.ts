@@ -2,12 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // GET - Get single product
-export async function GET(
-  request: NextRequest,
-  { params }: any
-) {
+export async function GET(request: NextRequest, context: any) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const product = await db.product.findUnique({
       where: { id },
       include: {
@@ -33,12 +30,9 @@ export async function GET(
 }
 
 // PUT - Update product
-export async function PUT(
-  request: NextRequest,
-  { params }: any
-) {
+export async function PUT(request: NextRequest, context: any) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
     const {
       name,
@@ -82,12 +76,9 @@ export async function PUT(
 }
 
 // DELETE - Delete product
-export async function DELETE(
-  request: NextRequest,
-  { params }: any
-) {
+export async function DELETE(request: NextRequest, context: any) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     await db.product.delete({
       where: { id }
     });

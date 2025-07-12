@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: any
-) {
+export async function PUT(request: NextRequest, context: any) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
     const { paymentStatus, paymentId, razorpayOrderId } = body;
 
