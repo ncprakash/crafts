@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // GET - Fetch a single product by ID
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function GET(req: NextRequest, context: any) {
+  const id = context?.params?.id;
 
   try {
     const product = await db.product.findUnique({
@@ -30,11 +27,8 @@ export async function GET(
 }
 
 // PUT - Update product
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function PUT(req: NextRequest, context: any) {
+  const id = context?.params?.id;
 
   try {
     const body = await req.json();
@@ -76,11 +70,8 @@ export async function PUT(
 }
 
 // DELETE - Delete product
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function DELETE(req: NextRequest, context: any) {
+  const id = context?.params?.id;
 
   try {
     await db.product.delete({
