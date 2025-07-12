@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // GET - Fetch a single product by ID
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, context: any) {
   const { id } = await context.params;
 
   try {
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 }
 
 // PUT - Update product
-export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, context: any) {
   const { id } = await context.params;
 
   try {
@@ -70,7 +70,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 }
 
 // DELETE - Delete product
-export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, context: any) {
   const { id } = await context.params;
 
   try {
