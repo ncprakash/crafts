@@ -59,6 +59,14 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // Vercel optimizations
+  output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
+  // Increase function timeout for API routes
+  serverRuntimeConfig: {
+    maxDuration: 30,
+  },
 };
 
 export default nextConfig;

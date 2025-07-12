@@ -4,10 +4,10 @@ import { db } from '@/lib/db';
 // GET - Get single product
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const product = await db.product.findUnique({
       where: { id },
       include: {
@@ -35,10 +35,10 @@ export async function GET(
 // PUT - Update product
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const body = await request.json();
     const {
       name,
@@ -84,10 +84,10 @@ export async function PUT(
 // DELETE - Delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     await db.product.delete({
       where: { id }
     });
