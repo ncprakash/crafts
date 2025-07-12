@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// ❗ Do NOT use type annotations for `context` — let Next.js infer it
-export async function GET(req: NextRequest, context: any) {
-  const id = context?.params?.id;
+// GET - Fetch a single product by ID
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
 
   try {
     const product = await db.product.findUnique({
@@ -26,8 +29,12 @@ export async function GET(req: NextRequest, context: any) {
   }
 }
 
-export async function PUT(req: NextRequest, context: any) {
-  const id = context?.params?.id;
+// PUT - Update product
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
 
   try {
     const body = await req.json();
@@ -68,8 +75,12 @@ export async function PUT(req: NextRequest, context: any) {
   }
 }
 
-export async function DELETE(req: NextRequest, context: any) {
-  const id = context?.params?.id;
+// DELETE - Delete product
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
 
   try {
     await db.product.delete({
