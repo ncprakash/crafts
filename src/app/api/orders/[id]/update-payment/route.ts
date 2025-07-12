@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-type Context = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export async function PUT(req: NextRequest, context: Context) {
-  const { id } = await context.params;
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
   try {
     const body = await req.json();
