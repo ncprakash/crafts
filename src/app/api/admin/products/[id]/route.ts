@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// GET - Fetch a single product by ID
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+// ✅ DO NOT type the second arg — let it be inferred
+export async function GET(req: NextRequest, context: any) {
+  const { id } = context.params;
 
   try {
     const product = await db.product.findUnique({
       where: { id },
       include: {
-        category: {
-          select: { name: true },
-        },
+        category: { select: { name: true } },
       },
     });
 
@@ -26,12 +24,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// PUT - Update product
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function PUT(req: NextRequest, context: any) {
+  const { id } = context.params;
 
   try {
-    const body = await request.json();
+    const body = await req.json();
     const {
       name,
       categoryId,
@@ -69,9 +66,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// DELETE - Delete product
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function DELETE(req: NextRequest, context: any) {
+  const { id } = context.params;
 
   try {
     await db.product.delete({
