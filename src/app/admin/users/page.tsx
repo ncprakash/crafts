@@ -21,12 +21,11 @@ interface User {
   username: string;
   email: string;
   role: 'user' | 'admin';
-  emailVerified: boolean;
+  isVerified: boolean;
   createdAt: string;
-  lastLogin: string;
+  lastLogin?: string;
   totalOrders: number;
   totalSpent: number;
-  isActive: boolean;
 }
 
 export default function UsersPage() {
@@ -54,48 +53,44 @@ export default function UsersPage() {
           username: 'john_doe',
           email: 'john@example.com',
           role: 'user',
-          emailVerified: true,
+          isVerified: true,
           createdAt: '2024-01-01',
           lastLogin: '2024-01-15',
           totalOrders: 5,
-          totalSpent: 299.95,
-          isActive: true
+          totalSpent: 299.95
         },
         {
           id: '2',
           username: 'jane_smith',
           email: 'jane@example.com',
           role: 'user',
-          emailVerified: true,
+          isVerified: true,
           createdAt: '2024-01-05',
           lastLogin: '2024-01-14',
           totalOrders: 3,
-          totalSpent: 119.97,
-          isActive: true
+          totalSpent: 119.97
         },
         {
           id: '3',
           username: 'admin_user',
           email: 'admin@example.com',
           role: 'admin',
-          emailVerified: true,
+          isVerified: true,
           createdAt: '2023-12-01',
           lastLogin: '2024-01-15',
           totalOrders: 0,
-          totalSpent: 0,
-          isActive: true
+          totalSpent: 0
         },
         {
           id: '4',
           username: 'mike_johnson',
           email: 'mike@example.com',
           role: 'user',
-          emailVerified: false,
+          isVerified: false,
           createdAt: '2024-01-10',
           lastLogin: '2024-01-12',
           totalOrders: 1,
-          totalSpent: 29.99,
-          isActive: false
+          totalSpent: 29.99
         }
       ];
       setUsers(mockUsers);
@@ -125,7 +120,7 @@ export default function UsersPage() {
     // Verification filter
     if (verificationFilter !== 'all') {
       filtered = filtered.filter(user => 
-        verificationFilter === 'verified' ? user.emailVerified : !user.emailVerified
+        verificationFilter === 'verified' ? user.isVerified : !user.isVerified
       );
     }
 
@@ -139,7 +134,7 @@ export default function UsersPage() {
     try {
       // API call to toggle user status
       setUsers(users.map(user => 
-        user.id === userId ? { ...user, isActive: !user.isActive } : user
+        user.id === userId ? { ...user, isVerified: !user.isVerified } : user
       ));
     } catch (error) {
       console.error('Error toggling user status:', error);
@@ -221,11 +216,11 @@ export default function UsersPage() {
           {/* Status Filter */}
           <Button
             variant="outline"
-            onClick={() => setFilteredUsers(users.filter(u => u.isActive))}
+            onClick={() => setFilteredUsers(users.filter(u => u.isVerified))}
             className="flex items-center"
           >
             <CheckCircle className="w-4 h-4 mr-2" />
-            Active Only
+            Verified Only
           </Button>
         </div>
       </div>
@@ -286,21 +281,26 @@ export default function UsersPage() {
                       }`}>
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </span>
-                      {user.emailVerified && (
-                        <CheckCircle className="w-4 h-4 text-green-500" title="Email Verified" />
+                      {user.isVerified && (
+                        <div className="relative group">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            Email Verified
+                          </div>
+                        </div>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      user.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {user.isActive ? 'Active' : 'Inactive'}
+                      {user.isVerified ? 'Verified' : 'Unverified'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      Last login: {new Date(user.lastLogin).toLocaleDateString()}
+                      Last login: {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                     </div>
                     <div className="text-sm text-gray-500">
                       {user.totalSpent > 0 ? `$${user.totalSpent.toFixed(2)} spent` : 'No purchases'}
@@ -318,11 +318,11 @@ export default function UsersPage() {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button 
-                        className={`${user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
-                        title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                        className={`${user.isVerified ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                        title={user.isVerified ? 'Unverify User' : 'Verify User'}
                         onClick={() => toggleUserStatus(user.id)}
                       >
-                        {user.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                        {user.isVerified ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                       </button>
                       <button className="text-gray-600 hover:text-gray-900" title="More Options">
                         <MoreVertical className="w-4 h-4" />

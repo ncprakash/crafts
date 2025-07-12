@@ -33,8 +33,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         phone_num: '+1234567890',
         isVerified: true,
-        role: 'admin',
-        isActive: true
+        role: 'admin'
       }
     });
 
