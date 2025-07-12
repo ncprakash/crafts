@@ -1,44 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const { id } = await params;
     const body = await request.json();
-    const { paymentId, razorpayOrderId, paymentStatus = 'paid' } = body;
+    const { paymentStatus, paymentId, razorpayOrderId } = body;
 
-    // Update the order with payment information
-    const updatedOrder = await db.order.update({
-      where: {
-        id: params.id,
-        userId: parseInt(session.user.id), // Ensure user owns this order
-      },
+    const order = await db.order.update({
+      where: { id },
       data: {
         paymentStatus,
-        paymentId: paymentId || null,
-        razorpayOrderId: razorpayOrderId || null,
-        status: paymentStatus === 'paid' ? 'processing' : 'pending',
-      },
+        paymentId,
+        razorpayOrderId
+      }
     });
 
-    return NextResponse.json({
-      success: true,
-      order: updatedOrder,
-    });
-
+    return NextResponse.json(order);
   } catch (error) {
-    console.error('Error updating order payment:', error);
+    console.error('Error updating payment status:', error);
     return NextResponse.json(
-      { error: 'Failed to update order payment' },
+      { error: 'Failed to update payment status' },
       { status: 500 }
     );
   }
