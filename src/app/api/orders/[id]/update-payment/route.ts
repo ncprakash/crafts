@@ -3,10 +3,10 @@ import { db } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: any
 ) {
   try {
-    const { id } = await context.params;
+    const { id } = await params;
     const body = await request.json();
     const { paymentStatus, paymentId, razorpayOrderId } = body;
 
