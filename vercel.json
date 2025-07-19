@@ -10,7 +10,7 @@
     }
   },
   "env": {
-    "DATABASE_URL": "@database_url",
+    "DATABASE_URL": "postgresql://postgres:admin@123@db.hewczumjphqxkjkgtdst.supabase.co:5432/postgres",
     "NEXTAUTH_SECRET": "@nextauth_secret",
     "NEXTAUTH_URL": "@nextauth_url",
     "EMAIL_USER": "@email_user",
