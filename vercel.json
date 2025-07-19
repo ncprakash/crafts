@@ -10,10 +10,10 @@
     }
   },
   "env": {
-    "DATABASE_URL": "@database-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXTAUTH_URL": "@nextauth-url",
-    "EMAIL_USER": "@email-user",
-    "EMAIL_PASS": "@email-pass"
+    "DATABASE_URL": "@database_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "NEXTAUTH_URL": "@nextauth_url",
+    "EMAIL_USER": "@email_user",
+    "EMAIL_PASS": "@email_pass"
   }
 } 
