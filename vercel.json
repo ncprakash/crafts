@@ -10,7 +10,7 @@
     }
   },
   "env": {
-    "DATABASE_URL": "postgresql://postgres:admin@123@db.hewczumjphqxkjkgtdst.supabase.co:5432/postgres",
+    "DATABASE_URL": "postgresql://postgres:admin@123@db.hewczumjphqxkjkgtdst.supabase.co:6543/postgres",
     "NEXTAUTH_SECRET": "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567",
     "NEXTAUTH_URL": "http://localhost:3000",
     "EMAIL_USER": "ncprakash121@gmail.com",
