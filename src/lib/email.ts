@@ -43,7 +43,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       console.warn('Missing BASE_URL or NEXT_PUBLIC_APP_URL in environment. Using fallback localhost.');
     }
 
-    const baseUrl = appUrl || 'https://your-domain.com'; // replace with your actual domain as fallback
+    const baseUrl = appUrl || 'https://crafts-five.vercel.app/'; // replace with your actual domain as fallback
     const verificationUrl = `${baseUrl}/verify?token=${token}`;
 
     const transporter = createTransporter();
