@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { db } from '@/lib/db'; // Make sure this is your Prisma client
 
 export async function POST(request: Request) {
   try {
@@ -8,9 +9,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
     }
 
-    // Here you can add logic to send an email or store the message in a database
-    // For now, just return a success response
-    console.log('Contact form submission:', { name, email, message });
+
+    await db.contact.create({
+      data: { name, email, message }
+    });
 
     return NextResponse.json({ success: true, message: 'Thank you for contacting us!' });
   } catch (error) {
