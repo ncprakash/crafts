@@ -25,54 +25,55 @@ const createTransporter = () => {
   });
 };
 
-// Generate verification token
+// Generate a 32-byte hex token
 export const generateVerificationToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
-// Send verification email
+// Send a styled verification email
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {
-    // Check if email is configured
     if (!isEmailConfigured()) {
       console.warn('Email configuration missing - cannot send verification email');
       return false;
     }
 
-    // Use BASE_URL or NEXT_PUBLIC_APP_URL for deployment
-    const appUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    if (!process.env.BASE_URL && !process.env.NEXT_PUBLIC_APP_URL) {
-      console.warn('BASE_URL or NEXT_PUBLIC_APP_URL is not configured - using fallback URL');
+    const appUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      console.warn('Missing BASE_URL or NEXT_PUBLIC_APP_URL in environment. Using fallback localhost.');
     }
 
-    const verificationUrl = `${appUrl}/verify?token=${token}`;
-    
+    const baseUrl = appUrl || 'https://your-domain.com'; // replace with your actual domain as fallback
+    const verificationUrl = `${baseUrl}/verify?token=${token}`;
+
     const transporter = createTransporter();
-    
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Verify Team" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: 'Verify your email address',
+      subject: '🔐 Verify Your Email Address',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Email Verification</h2>
-          <p>Thank you for signing up! Please click the button below to verify your email address:</p>
-          <a href="${verificationUrl}" 
-             style="display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-            Verify Email
-          </a>
-          <p>If the button doesn't work, copy and paste this link into your browser:</p>
-          <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
+        <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; padding: 24px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <h2 style="color: #2c3e50;">👋 Welcome!</h2>
+          <p style="font-size: 16px; color: #333;">Thanks for signing up! Please confirm your email address by clicking the button below:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" 
+               style="background-color: #4CAF50; color: white; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 16px;">
+              Verify Email
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #666;">If the button doesn't work, copy and paste this URL into your browser:</p>
+          <p style="font-size: 13px; word-break: break-all; color: #999;">${verificationUrl}</p>
+          <p style="font-size: 13px; color: #aaa;">This link will expire in 24 hours.</p>
         </div>
       `,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log('Verification email sent successfully to:', email);
+    console.log('Verification email sent to:', email);
     return true;
   } catch (error) {
     console.error('Email sending error:', error);
     return false;
   }
-}; 
+};
