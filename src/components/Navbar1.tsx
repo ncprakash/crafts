@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import AuthModal from './AuthModal';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 function Navbar1() {
   const { data: session, status } = useSession();
@@ -16,6 +17,7 @@ function Navbar1() {
   const { totalItems } = useCart();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [serverCartCount, setServerCartCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch server-side cart count for authenticated users
   useEffect(() => {
@@ -61,19 +63,19 @@ function Navbar1() {
   }, []);
 
   const handleUserClick = () => {
-    if (status === 'loading') return; // Don't do anything while loading
+    if (status === 'loading') return; 
     
     if (session) {
       // Check if user is admin
       if (session.user?.role === 'admin') {
-        // Admin users go to admin panel
+       
         router.push('/admin');
       } else {
-        // Regular users go to dashboard
+      
         router.push('/dashboard');
       }
     } else {
-      // User is not authenticated, show modal
+   
       setShowAuthModal(true);
     }
   };
@@ -116,7 +118,7 @@ function Navbar1() {
            </Link>
            
 
-          {/* Navigation Links with gold accent */}
+          {/* Desktop Navigation Links */}
           <ul className="hidden md:flex gap-10 text-sm font-medium tracking-wider">
             {['ABOUT', 'SHOP', 'CONTACTS'].map((item) => (
               <li key={item} className="relative group">
@@ -131,7 +133,7 @@ function Navbar1() {
             ))}
           </ul>
 
-          {/* Icons with bounce effect */}
+          {/* Desktop Icons */}
           <div className="hidden md:flex gap-8 text-xl">
             <button 
               onClick={handleUserClick}
@@ -151,10 +153,60 @@ function Navbar1() {
               )}
             </button>
           </div>
+
+          {/* Hamburger menu for mobile */}
+          <button
+            className="md:hidden text-2xl focus:outline-none"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {mobileMenuOpen ? <FiX /> : <FiMenu />}
+          </button>
         </div>
 
-        {/* Secondary gold bar */}
-       
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#0A1D44] px-6 pb-6 pt-2 flex flex-col gap-4 shadow-lg animate-fade-in-down">
+            <ul className="flex flex-col gap-4 text-base font-medium">
+              {['ABOUT', 'SHOP', 'CONTACTS'].map((item) => (
+                <li key={item}>
+                  <Link
+                    href={`/${item.toLowerCase()}`}
+                    className="block text-white hover:text-[#D6B45C] py-2 px-1"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-6 text-2xl mt-2">
+              <button
+                onClick={() => {
+                  handleUserClick();
+                  setMobileMenuOpen(false);
+                }}
+                className="text-white hover:text-[#D6B45C] transition-all duration-300 hover:scale-110"
+              >
+                <MdPerson />
+              </button>
+              <button
+                onClick={() => {
+                  handleCartClick();
+                  setMobileMenuOpen(false);
+                }}
+                className="text-white hover:text-[#D6B45C] transition-all duration-300 hover:scale-110 relative"
+              >
+                <IoCartSharp />
+                {(totalItems > 0 || serverCartCount > 0) && (
+                  <span className="absolute -top-2 -right-2 bg-[#D6B45C] text-[#0A1D44] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {totalItems > 0 ? totalItems : serverCartCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
     </div>
 
@@ -163,6 +215,15 @@ function Navbar1() {
       isOpen={showAuthModal} 
       onClose={() => setShowAuthModal(false)} 
     />
+    <style jsx global>{`
+      @keyframes fade-in-down {
+        0% { opacity: 0; transform: translateY(-20px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-down {
+        animation: fade-in-down 0.3s ease-out;
+      }
+    `}</style>
     </>
   )
 }
