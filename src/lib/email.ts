@@ -39,12 +39,12 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       return false;
     }
 
-    // Check if app URL is configured
-    if (!process.env.NEXT_PUBLIC_APP_URL) {
-      console.warn('NEXT_PUBLIC_APP_URL is not configured - using fallback URL');
+    // Use BASE_URL or NEXT_PUBLIC_APP_URL for deployment
+    const appUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    if (!process.env.BASE_URL && !process.env.NEXT_PUBLIC_APP_URL) {
+      console.warn('BASE_URL or NEXT_PUBLIC_APP_URL is not configured - using fallback URL');
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const verificationUrl = `${appUrl}/verify?token=${token}`;
     
     const transporter = createTransporter();
