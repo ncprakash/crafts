@@ -15,28 +15,7 @@ const Footer = () => {
           transition={{ duration: 0.6 }}
           className="bg-[#D6B45C] rounded-lg p-8 shadow-lg"
         >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="text-[#0A1D44]">
-              <h3 className="text-2xl md:text-3xl font-bold mb-2">
-                Get 10% Off Your First Order!
-              </h3>
-              <p>Subscribe to our newsletter for exclusive offers and new product updates</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="px-4 py-3 rounded-lg border-none focus:ring-2 focus:ring-[#0A1D44] text-[#0A1D44] flex-grow"
-                suppressHydrationWarning
-              />
-              <button 
-                className="bg-[#0A1D44] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0A1D44]/90 transition-colors duration-300 shadow-md hover:shadow-lg"
-                suppressHydrationWarning
-              >
-                Subscribe
-              </button>
-            </div>
-          </div>
+         
         </motion.div>
       </div>
 
@@ -87,7 +66,7 @@ const Footer = () => {
           <ul className="space-y-2">
             {['Handmade Crafts', 'Polaroids', 'Phone Cases'].map((cat) => (
               <li key={cat}>
-                <Link href={`/categories/${cat.toLowerCase().replace(' ', '-')}`} className="text-white/80 hover:text-[#D6B45C] transition-colors duration-300">
+                <Link href={`/shop`} className="text-white/80 hover:text-[#D6B45C] transition-colors duration-300">
                   {cat}
                 </Link>
               </li>
@@ -103,9 +82,9 @@ const Footer = () => {
         >
           <h4 className="text-lg font-bold mb-4">Contact Info</h4>
           <address className="not-italic space-y-2 text-white/80">
-            <p>📧 hello@gunnalcreations.com</p>
-            <p>📞 +1 (555) 123-4567</p>
-            <p>📍 123 Craft Street, Art City</p>
+            <p>📧 gunnalcreations@gmail.com</p>
+            <p>📞 +91 78992 51692</p>
+            <p>📍kengeri,banglore </p>
           </address>
         </motion.div>
       </div>
@@ -118,6 +97,22 @@ const Footer = () => {
         className="max-w-7xl mx-auto mt-16 pt-8 border-t border-white/10 text-center text-white/60"
       >
         <p>© 2024 Gunnal Creations. All rights reserved.</p>
+        <div className="mt-2 flex flex-col items-center justify-center">
+          <span className="text-sm text-white/80 flex items-center gap-2">
+            <span>Created by</span>
+            <a
+              href="https://www.linkedin.com/in/prakash-n-c-b466102ba/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold text-[#D6B45C] hover:underline hover:text-[#bfa14a] transition-colors duration-200"
+            >
+              nc prakash
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24" className="ml-1 text-[#0A66C2]">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-9h3v9zm-1.5-10.271c-.966 0-1.75-.785-1.75-1.75s.784-1.75 1.75-1.75 1.75.785 1.75 1.75-.784 1.75-1.75 1.75zm15.5 10.271h-3v-4.604c0-1.098-.021-2.509-1.529-2.509-1.529 0-1.764 1.195-1.764 2.428v4.685h-3v-9h2.881v1.229h.041c.401-.761 1.379-1.563 2.841-1.563 3.039 0 3.6 2.001 3.6 4.601v4.733z"/>
+              </svg>
+            </a>
+          </span>
+        </div>
       </motion.div>
     </footer>
   );

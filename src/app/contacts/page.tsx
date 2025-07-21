@@ -5,15 +5,35 @@ import { Mail, Phone, Instagram, Send, User, MessageCircle } from 'lucide-react'
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', form);
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult({ type: 'success', message: data.message || 'Message sent successfully!' });
+        setForm({ name: '', email: '', message: '' });
+      } else {
+        setResult({ type: 'error', message: data.error || 'Something went wrong.' });
+      }
+    } catch (error) {
+      setResult({ type: 'error', message: 'Network error. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,6 +81,10 @@ export default function ContactPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Show result message */}
+            {result && (
+              <div className={`text-center py-2 rounded-lg font-medium ${result.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{result.message}</div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -124,9 +148,10 @@ export default function ContactPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="bg-[#FDC93B] hover:bg-[#e4b230] text-[#0A1D44] font-bold py-4 px-8 rounded-xl text-lg shadow-lg transition-all flex items-center justify-center mx-auto"
+                disabled={loading}
               >
                 <Send className="w-5 h-5 mr-2" />
-                Send Message
+                {loading ? 'Sending...' : 'Send Message'}
               </motion.button>
             </motion.div>
           </form>
