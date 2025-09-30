@@ -8,17 +8,7 @@ const Footer = () => {
   return (
     <footer className="bg-[#0A1D44] text-white pt-16 pb-8 px-6">
       {/* Newsletter */}
-      <div className="max-w-7xl mx-auto mb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-[#D6B45C] rounded-lg p-8 shadow-lg"
-        >
-         
-        </motion.div>
-      </div>
-
+     
       {/* Footer Grid */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Brand */}

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Mail, Phone, Instagram, Send, User, MessageCircle } from 'lucide-react';
 
@@ -181,9 +182,10 @@ export default function ContactPage() {
               </div>
 
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#FDC93B] to-[#e4b230] rounded-full flex items-center justify-center">
+               
+                <Link href={"https://www.instagram.com/_niru_gunnal/"}><div className="w-12 h-12 bg-gradient-to-br from-[#FDC93B] to-[#e4b230] rounded-full flex items-center justify-center">
                   <Instagram className="w-6 h-6 text-white" />
-                </div>
+                </div></Link>
                 <p className="text-sm text-gray-600">Instagram</p>
                 <p className="font-semibold text-[#0A1D44]">@gunnalcreations</p>
               </div>

@@ -47,9 +47,10 @@ body {
   font-family: 'MyFont',sans-serif;
 }
 @font-face {
-  font-family: 'myFont';
-  src: url(/crafts/public/Butler/Butler_Black.otf);
+  font-family: 'Butler';
+  src: url('/fonts/Butler_Black.otf') format('opentype');
 }
+
 
 :root {
   --radius: 0.625rem;

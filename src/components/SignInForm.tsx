@@ -61,6 +61,7 @@ const SignInForm = () => {
 
       if (result?.error) {
         toast.error(result.error);
+        console.log(result.error);
       } else if (result?.ok) {
         toast.success('Signed in successfully!');
         // The redirect will be handled by useEffect when session is updated

@@ -17,6 +17,7 @@ export default function CheckoutPage() {
   const [total, setTotal] = useState(0);
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
 
   // Format currency to Indian Rupees
   const formatCurrency = (amount: number) => {
@@ -26,6 +27,80 @@ export default function CheckoutPage() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  };
+
+  // Razorpay payment function
+  const handleRazorpayPayment = async (orderResult: any) => {
+    const options = {
+      key: 'rzp_live_RN4opVXKWAkvwp',
+      amount: orderResult.razorpayOrder.amount,
+      currency: orderResult.razorpayOrder.currency,
+      name: 'Gunnal Crafts',
+      description: 'Order Payment',
+      order_id: orderResult.razorpayOrder.id,
+      handler: async function (response: any) {
+        try {
+          // Verify payment on server
+          const verificationResponse = await fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+
+          const verificationResult = await verificationResponse.json();
+
+          if (verificationResult.success) {
+            // Clear cart and show success
+            await clearServerCart();
+            setOrderSuccess(true);
+            setFormData({
+              first: '', last: '', email: '', phone: '', address: '',
+              city: '', zip: '', state: '', country: '', coupon: ''
+            });
+            setError('');
+            
+            // Start countdown
+            const countdownInterval = setInterval(() => {
+              setCountdown((prev) => {
+                if (prev <= 1) {
+                  clearInterval(countdownInterval);
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          } else {
+            setError('Payment verification failed. Please contact support.');
+          }
+        } catch (error) {
+          console.error('Payment verification error:', error);
+          setError('Payment verification failed. Please contact support.');
+        }
+      },
+      prefill: {
+        name: `${formData.first} ${formData.last}`,
+        email: formData.email,
+        contact: formData.phone,
+      },
+      notes: {
+        address: formData.address,
+      },
+      theme: {
+        color: '#3395ff',
+      },
+    };
+
+    const razorpay = new (window as any).Razorpay(options);
+    razorpay.on('payment.failed', function (response: any) {
+      setError('Payment failed. Please try again.');
+    });
+    razorpay.open();
   };
 
   // Fetch server-side cart items
@@ -76,7 +151,6 @@ export default function CheckoutPage() {
     first: '', last: '', email: '', phone: '', address: '',
     city: '', zip: '', state: '', country: '', coupon: ''
   });
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('online');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -186,43 +260,49 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Process order (Cash on Delivery only)
-      try {
-        // Update order status for COD
-        await fetch(`/api/orders/${orderResult.order.id}/update-payment`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            paymentStatus: 'pending',
-            status: 'processing',
-          }),
-        });
-
-        // Clear cart and show success
-        await clearServerCart();
-        
-        setOrderSuccess(true);
-        setFormData({
-          first: '', last: '', email: '', phone: '', address: '',
-          city: '', zip: '', state: '', country: '', coupon: ''
-        });
-        setError('');
-        
-        // Start countdown
-        const countdownInterval = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(countdownInterval);
-              return 0;
-            }
-            return prev - 1;
+      // Process order based on payment method
+      if (paymentMethod === 'razorpay') {
+        // Handle Razorpay payment
+        await handleRazorpayPayment(orderResult);
+      } else {
+        // Handle Cash on Delivery
+        try {
+          // Update order status for COD
+          await fetch(`/api/orders/${orderResult.order.id}/update-payment`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paymentStatus: 'pending',
+              status: 'processing',
+            }),
           });
-        }, 1000);
-      } catch (error) {
-        console.error('Error processing COD order:', error);
-        setError('Failed to process COD order');
+
+          // Clear cart and show success
+          await clearServerCart();
+          
+          setOrderSuccess(true);
+          setFormData({
+            first: '', last: '', email: '', phone: '', address: '',
+            city: '', zip: '', state: '', country: '', coupon: ''
+          });
+          setError('');
+          
+          // Start countdown
+          const countdownInterval = setInterval(() => {
+            setCountdown((prev) => {
+              if (prev <= 1) {
+                clearInterval(countdownInterval);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        } catch (error) {
+          console.error('Error processing COD order:', error);
+          setError('Failed to process COD order');
+        }
       }
 
     } catch (error) {
@@ -504,9 +584,9 @@ export default function CheckoutPage() {
                 <input
                   type="radio"
                   name="paymentMethod"
-                  value="online"
-                  checked={paymentMethod === 'online'}
-                  onChange={(e) => setPaymentMethod(e.target.value as 'cod' | 'online')}
+                  value="razorpay"
+                  checked={paymentMethod === 'razorpay'}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
                   className="w-4 h-4 text-[#FDC93B] bg-gray-100 border-gray-300 focus:ring-[#FDC93B] focus:ring-2"
                 />
                 <div className="flex items-center space-x-2">

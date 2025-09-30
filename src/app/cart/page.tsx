@@ -21,6 +21,8 @@ interface CartItem {
 
 export default function Cart() {
   const { data: session } = useSession();
+  console.log(session);
+  console.log("hiii");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -54,22 +56,27 @@ export default function Cart() {
   };
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return; // avoid 0 or negative
+  
     try {
       const response = await fetch(`/api/cart/items/${itemId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: newQuantity }),
       });
-
+  
+      const data = await response.json();
+  
       if (response.ok) {
-        fetchCartItems(); // Refresh cart data
+        fetchCartItems(); // refresh cart
+      } else {
+        console.error('Update failed:', data.error);
       }
-    } catch (error) {
-      console.error('Error updating quantity:', error);
+    } catch (err) {
+      console.error('Error updating quantity:', err);
     }
   };
+  
 
   const removeItem = async (itemId: string) => {
     try {
@@ -203,12 +210,14 @@ export default function Cart() {
                 >
                   {/* Image */}
                   <div className="relative w-16 h-16 mr-4 bg-white rounded-lg p-2 shadow-sm">
-                    <Image
-                      src={item.product.images ? item.product.images.split(',')[0] : '/logo.svg'}
-                      alt={item.product.name}
-                      fill
-                      className="object-contain"
-                    />
+                  <Image
+  src={item.product.images ? item.product.images.split(',')[0] : '/logo.svg'}
+  alt={item.product.name}
+  fill
+  sizes="(max-width: 768px) 100vw, 50vw"  // <- add this
+  className="object-contain"
+/>
+
                   </div>
 
                   {/* Text Content */}
