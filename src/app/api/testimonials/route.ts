@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       whereClause.productName = productName;
     }
 
-    const testimonials = await prisma.testimonial.findMany({
+    const testimonials = await db.testimonial.findMany({
       where: whereClause,
       orderBy: {
         createdAt: 'desc'
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
-    const transformedTestimonials = testimonials.map(testimonial => ({
+    const transformedTestimonials = testimonials.map((testimonial: any) => ({
       id: testimonial.id,
       customerName: testimonial.user.username,
       customerEmail: testimonial.user.email,
@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
       createdAt: testimonial.createdAt,
       productName: testimonial.productName
     }));
-
     return NextResponse.json(transformedTestimonials);
   } catch (error) {
     console.error('Error fetching testimonials:', error);
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has already reviewed this product
-    const existingReview = await prisma.testimonial.findFirst({
+    const existingReview = await db.testimonial.findFirst({
       where: {
         productName,
         userId: parseInt(session.user.id)
@@ -98,7 +97,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const testimonial = await prisma.testimonial.create({
+    const testimonial = await db.testimonial.create({
       data: {
         userId: parseInt(session.user.id),
         productName,

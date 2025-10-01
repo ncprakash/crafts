@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
-    const categoriesWithProductCount = categories.map(category => ({
+    const categoriesWithProductCount = categories.map((category: typeof categories[number])=> ({
       id: category.id,
       name: category.name,
       description: category.description,

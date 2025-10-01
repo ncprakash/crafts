@@ -47,8 +47,14 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const total = cartItems.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
-    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    // Safely convert Decimal to number
+    const total = cartItems.reduce((sum, item) => {
+      return sum + (item.price.toNumber() * item.quantity);
+    }, 0);
+
+    const itemCount = cartItems.reduce((sum, item) => {
+      return sum + item.quantity;
+    }, 0);
 
     return NextResponse.json({
       items: cartItems,
@@ -111,4 +117,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

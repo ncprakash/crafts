@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     let cartOrder = await db.order.findFirst({
       where: {
         userId: parseInt(session.user.id),
-        status: 'cart' // We'll use 'cart' status for items in cart
+        status: 'cart'
       }
     });
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         where: { id: existingOrderItem.id },
         data: {
           quantity: existingOrderItem.quantity + quantity,
-          price: Number(product.price)
+          price: product.price // Decimal stays fine
         }
       });
     } else {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           orderId: cartOrder.id,
           productId: productId,
           quantity: quantity,
-          price: Number(product.price)
+          price: product.price // Decimal stays fine
         }
       });
     }
@@ -93,7 +93,10 @@ export async function POST(request: NextRequest) {
       where: { orderId: cartOrder.id }
     });
 
-    const total = orderItems.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+    // Safely convert Decimal to number
+    const total = orderItems.reduce((sum, item) => {
+      return sum + (item.price.toNumber() * item.quantity);
+    }, 0);
 
     await db.order.update({
       where: { id: cartOrder.id },
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
       cartItem: {
         productId,
         quantity,
-        price: Number(product.price),
+        price: product.price.toNumber(),
         name: product.name
       }
     });
@@ -118,4 +121,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

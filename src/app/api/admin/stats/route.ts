@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+
 export async function GET(request: NextRequest) {
   try {
     // Get total users
@@ -21,8 +22,10 @@ export async function GET(request: NextRequest) {
         total: true
       }
     });
-
-    const totalSales = orders.reduce((sum, order) => sum + Number(order.total), 0);
+    const totalSales = orders
+    .map(order => order.total.toNumber())
+    .reduce((sum, value) => sum + value, 0);
+  
 
     // Get low stock items (products with stock <= 5)
     const lowStockItems = await db.product.count({
