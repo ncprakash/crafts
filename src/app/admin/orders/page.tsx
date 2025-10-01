@@ -3,15 +3,13 @@
 import { useState, useEffect } from 'react';
 import { 
   Search, 
-  Filter, 
   Eye, 
   Package, 
   Truck,
   CheckCircle,
-  XCircle,
-  Calendar,
   DollarSign,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -58,6 +56,12 @@ export default function OrdersPage() {
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Tracking modal state
+  const [isTrackingModalOpen, setTrackingModalOpen] = useState(false);
+  const [trackingInput, setTrackingInput] = useState('');
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -71,15 +75,55 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/admin/orders');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders');
-      }
-      
+  
+      const response = await fetch('/api/orders');
+      if (!response.ok) throw new Error('Failed to fetch orders');
+  
       const data = await response.json();
-      setOrders(data.orders);
+  
+      // Group by orderId
+      const ordersMap: Record<string, Order & { items: OrderItem[] }> = {};
+  
+      data.forEach((row: any) => {
+        if (!ordersMap[row.orderId]) {
+          ordersMap[row.orderId] = {
+            id: row.orderId,
+            userId: row.userId,
+            customerName: row.customerName,
+            customerEmail: row.customerEmail,
+            customerPhone: row.customerPhone,
+            shippingAddress: row.shippingAddress,
+            total: row.total,
+            status: row.status,
+            paymentStatus: row.paymentStatus,
+            paymentId: row.paymentId,
+            razorpayOrderId: row.razorpayOrderId,
+            trackingNumber: row.trackingNumber,
+            orderDate: row.orderDate,
+            updatedAt: row.updatedAt,
+            user: {
+              id: row.userId,
+              username: row.username,
+              email: row.userEmail,
+            },
+            items: [],
+          };
+        }
+  
+        ordersMap[row.orderId].items.push({
+          id: row.orderItemId,
+          productId: row.productId,
+          quantity: row.quantity,
+          price: row.itemPrice,
+          product: {
+            id: row.productId,
+            name: row.productName,
+            images: row.images,
+          },
+        });
+      });
+  
+      setOrders(Object.values(ordersMap));
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError('Failed to load orders. Please try again.');
@@ -91,7 +135,6 @@ export default function OrdersPage() {
   const filterOrders = () => {
     let filtered = orders;
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(order =>
         order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,17 +144,14 @@ export default function OrdersPage() {
       );
     }
 
-    // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
-    // Payment filter
     if (paymentFilter !== 'all') {
       filtered = filtered.filter(order => order.paymentStatus === paymentFilter);
     }
 
-    // Sort by date (newest first)
     filtered.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
     setFilteredOrders(filtered);
@@ -121,22 +161,12 @@ export default function OrdersPage() {
     try {
       const response = await fetch('/api/admin/orders', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId,
-          status: newStatus
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: newStatus })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
+      if (!response.ok) throw new Error('Failed to update order status');
 
-      const data = await response.json();
-      
-      // Update the order in the local state
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
@@ -150,22 +180,12 @@ export default function OrdersPage() {
     try {
       const response = await fetch('/api/admin/orders', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId,
-          paymentStatus: newPaymentStatus
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, paymentStatus: newPaymentStatus })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update payment status');
-      }
+      if (!response.ok) throw new Error('Failed to update payment status');
 
-      const data = await response.json();
-      
-      // Update the order in the local state
       setOrders(orders.map(order => 
         order.id === orderId ? { ...order, paymentStatus: newPaymentStatus } : order
       ));
@@ -175,33 +195,68 @@ export default function OrdersPage() {
     }
   };
 
-  const updateTrackingNumber = async (orderId: string, trackingNumber: string) => {
+  const handleTrackingSubmit = async () => {
+    if (!currentOrderId || !trackingInput.trim()) {
+      alert('Please enter a tracking number');
+      return;
+    }
+
     try {
+      // Update tracking number
       const response = await fetch('/api/admin/orders', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId,
-          trackingNumber
+          orderId: currentOrderId,
+          trackingNumber: trackingInput.trim()
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update tracking number');
+      if (!response.ok) throw new Error('Failed to update tracking number');
+
+      // Update local state
+      setOrders(orders.map(order => 
+        order.id === currentOrderId ? { ...order, trackingNumber: trackingInput.trim() } : order
+      ));
+
+      // Send shipping email
+      if (currentOrder) {
+        await fetch('/api/send-shipping-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: currentOrder.customerEmail,
+            name: currentOrder.customerName,
+            trackingNumber: trackingInput.trim(),
+          }),
+        });
       }
 
-      const data = await response.json();
+      alert('Tracking number updated and email sent!');
       
-      // Update the order in the local state
-      setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, trackingNumber } : order
-      ));
+      // Close modal and reset
+      setTrackingModalOpen(false);
+      setTrackingInput('');
+      setCurrentOrderId(null);
+      setCurrentOrder(null);
     } catch (error) {
       console.error('Error updating tracking number:', error);
       alert('Failed to update tracking number. Please try again.');
     }
+  };
+
+  const openTrackingModal = (order: Order) => {
+    setCurrentOrder(order);
+    setCurrentOrderId(order.id);
+    setTrackingInput(order.trackingNumber || '');
+    setTrackingModalOpen(true);
+  };
+
+  const closeTrackingModal = () => {
+    setTrackingModalOpen(false);
+    setTrackingInput('');
+    setCurrentOrderId(null);
+    setCurrentOrder(null);
   };
 
   const getStatusColor = (status: Order['status']) => {
@@ -316,7 +371,6 @@ export default function OrdersPage() {
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -328,7 +382,6 @@ export default function OrdersPage() {
             />
           </div>
 
-          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -342,7 +395,6 @@ export default function OrdersPage() {
             <option value="cancelled">Cancelled</option>
           </select>
 
-          {/* Payment Filter */}
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
@@ -354,7 +406,6 @@ export default function OrdersPage() {
             <option value="failed">Failed</option>
           </select>
 
-          {/* Results Count */}
           <div className="flex items-center justify-end">
             <span className="text-sm text-gray-600">
               {filteredOrders.length} of {orders.length} orders
@@ -400,29 +451,27 @@ export default function OrdersPage() {
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{order.id}</div>
-                    <div className="text-sm text-gray-500">
-                      {order.user.username}
-                    </div>
+                    <div className="text-sm text-gray-500">{order.user.username}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
                     <div className="text-sm text-gray-500">{order.customerEmail}</div>
-                    {order.customerPhone && (
-                      <div className="text-sm text-gray-500">{order.customerPhone}</div>
-                    )}
+                    {order.customerPhone && <div className="text-sm text-gray-500">{order.customerPhone}</div>}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {order.items.map(item => item.product.name).join(', ')}
+                      {order.items.map(item => (
+                        <div key={item.id}>
+                          {item.product.name} - ₹{item.price} x {item.quantity}
+                        </div>
+                      ))}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      ₹{Number(order.total).toFixed(2)}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">₹{Number(order.total).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <select
@@ -449,25 +498,16 @@ export default function OrdersPage() {
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {new Date(order.orderDate).toLocaleDateString()}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(order.orderDate).toLocaleTimeString()}
-                    </div>
+                    <div className="text-sm text-gray-900">{new Date(order.orderDate).toLocaleDateString()}</div>
+                    <div className="text-sm text-gray-500">{new Date(order.orderDate).toLocaleTimeString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          // Add tracking number functionality
-                          const tracking = prompt('Enter tracking number:');
-                          if (tracking) {
-                            updateTrackingNumber(order.id, tracking);
-                          }
-                        }}
+                        onClick={() => openTrackingModal(order)}
+                        title={order.trackingNumber ? `Current: ${order.trackingNumber}` : 'Add tracking number'}
                       >
                         <Truck className="w-4 h-4" />
                       </Button>
@@ -492,6 +532,60 @@ export default function OrdersPage() {
           </p>
         </div>
       )}
+
+      {/* Tracking Number Modal - Rendered outside the table */}
+      {isTrackingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Update Tracking Number</h2>
+              <button
+                onClick={closeTrackingModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {currentOrder && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Order: <span className="font-medium text-gray-900">#{currentOrder.id.slice(0, 12)}</span></p>
+                <p className="text-sm text-gray-600">Customer: <span className="font-medium text-gray-900">{currentOrder.customerName}</span></p>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tracking Number
+              </label>
+              <input
+                type="text"
+                value={trackingInput}
+                onChange={(e) => setTrackingInput(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter tracking number"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors"
+                onClick={closeTrackingModal}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-2"
+                onClick={handleTrackingSubmit}
+              >
+                <Truck className="w-4 h-4" />
+                Update & Send Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-} 
+}

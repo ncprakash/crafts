@@ -1,31 +1,44 @@
-import { useSession, signIn, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useSession, signIn, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export const useAuth = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  // Email/password login
   const login = async (email: string, password: string) => {
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn("credentials", {
         email,
         password,
-        redirect: false,
+        redirect: false, // we handle navigation manually
       });
       return result;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       throw error;
     }
   };
 
-  const logout = async () => {
-    await signOut({ callbackUrl: '/' });
+  // Google login
+  const loginWithGoogle = async () => {
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" }); // redirect after login
+    } catch (error) {
+      console.error("Google login error:", error);
+      throw error;
+    }
   };
 
+  // Logout
+  const logout = async () => {
+    await signOut({ callbackUrl: "/" });
+  };
+
+  // Protect routes
   const requireAuth = (callback?: () => void) => {
-    if (status === 'unauthenticated') {
-      router.push('/sign-in');
+    if (status === "unauthenticated") {
+      router.push("/sign-in");
       return false;
     }
     if (callback) callback();
@@ -36,9 +49,10 @@ export const useAuth = () => {
     session,
     status,
     login,
+    loginWithGoogle,
     logout,
     requireAuth,
-    isAuthenticated: status === 'authenticated',
-    isLoading: status === 'loading',
+    isAuthenticated: status === "authenticated",
+    isLoading: status === "loading",
   };
-}; 
+};

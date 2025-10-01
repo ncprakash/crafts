@@ -17,6 +17,16 @@ const UserSchema = z
       .length(10, { message: "Phone number must be 10 digits" })
       .regex(/^[0-9]+$/, { message: "Phone number must contain only digits" }),
   });
+  export async function GET(req: NextRequest) {
+    try {
+      const users = await db.user.findMany();
+      console.log(users);
+      return NextResponse.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+  }
 
 export async function POST(req: NextRequest) {
   try {

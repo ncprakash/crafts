@@ -67,12 +67,14 @@ const NavSection = () => {
       </div>
 
       {/* Enhanced CTA Button */}
+      <Link href="/shop">
       <button className="mt-6 sm:mt-8 px-6 sm:px-8 md:px-10 py-3 sm:py-4 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] text-[#0A1D44] font-medium rounded-full hover:from-white hover:to-white hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center gap-2 group text-sm sm:text-base">
         <span>Explore Collection</span>
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
         </svg>
       </button>
+      </Link>
     </div>
   </div>
 

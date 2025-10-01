@@ -1,13 +1,14 @@
 'use client'
 import React from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 const AboutSection = () => {
   const features = [
-    { icon: "🎨", title: "Handcrafted", description: "Every piece is made with love and attention to detail" },
-    { icon: "✨", title: "Unique Design", description: "No two items are exactly alike" },
-    { icon: "💝", title: "Personal Touch", description: "Customized to match your personality" },
-    { icon: "🌟", title: "Quality Assured", description: "Premium materials and craftsmanship" }
+    {  title: "Handcrafted", description: "Every piece is made with love and attention to detail" },
+    {  title: "Unique Design", description: "No two items are exactly alike" },
+    {  title: "Personal Touch", description: "Customized to match your personality" },
+    {  title: "Quality Assured", description: "Premium materials and craftsmanship" }
   ];
 
   return (
@@ -111,13 +112,7 @@ const AboutSection = () => {
               }}
               className="text-center p-4 sm:p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-[#D6B45C]/20"
             >
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="text-2xl sm:text-3xl md:text-4xl mb-3 sm:mb-4"
-              >
-                {feature.icon}
-              </motion.div>
+         
               <h3 className="text-lg sm:text-xl font-bold text-[#0A1D44] mb-2">{feature.title}</h3>
               <p className="text-xs sm:text-sm text-[#9C6B3B]">{feature.description}</p>
             </motion.div>
@@ -209,6 +204,7 @@ const AboutSection = () => {
           viewport={{ once: true }}
           className="text-center mt-12 sm:mt-16"
         >
+          <Link href="https://www.instagram.com/gunnal.creations/reels/">
           <motion.button 
             whileHover={{ 
               scale: 1.05,
@@ -230,6 +226,7 @@ const AboutSection = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </motion.svg>
           </motion.button>
+          </Link>
         </motion.div>
       </div>
 

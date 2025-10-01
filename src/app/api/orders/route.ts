@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import {db } from '@/lib/db';
 import Razorpay from 'razorpay';
+
+
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,60 +114,103 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth();
+// export async function GET(request: NextRequest) {
+//   try {
+//     const session = await auth();
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+//     if (!session?.user?.id) {
+//       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+//     }
 
-    // Get query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get('status');
-    const paymentStatus = searchParams.get('paymentStatus');
+//     // Get query parameters
+//     const searchParams = request.nextUrl.searchParams;
+//     const status = searchParams.get('status');
+//     const paymentStatus = searchParams.get('paymentStatus');
 
-    // Build where clause
-    const whereClause: any = {
-      userId: parseInt(session.user.id)
-    };
+//     // Build where clause
+//     const whereClause: any = {
+//       userId: parseInt(session.user.id)
+//     };
 
-    if (status) {
-      whereClause.status = status;
-    }
+//     if (status) {
+//       whereClause.status = status;
+//     }
 
-    if (paymentStatus) {
-      whereClause.paymentStatus = paymentStatus;
-    }
+//     if (paymentStatus) {
+//       whereClause.paymentStatus = paymentStatus;
+//     }
 
-    const orders = await db.order.findMany({
-      where: whereClause,
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                images: true,
-                slug: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        orderDate: 'desc'
-      }
-    });
+//     const orders = await db.order.findMany({
+//       where: whereClause,
+//       include: {
+//         items: {
+//           include: {
+//             product: {
+//               select: {
+//                 id: true,
+//                 name: true,
+//                 images: true,
+//                 slug: true
+//               }
+//             }
+//           }
+//         }
+//       },
+//       orderBy: {
+//         orderDate: 'desc'
+//       }
+//     });
 
-    return NextResponse.json({ orders });
+//     return NextResponse.json({ orders });
 
+//   } catch (error) {
+//     console.error('Orders fetch error:', error);
+//     return NextResponse.json(
+//       { error: 'Failed to fetch orders' },
+//       { status: 500 }
+//     );
+//   }
+// }
+export async function GET() {
+  try {
+    const results = await db.$queryRawUnsafe(`
+      SELECT 
+        o.id AS "orderId",
+        o."customerName",
+        o."customerEmail",
+        o."customerPhone",
+        o."shippingAddress",
+        o.total,
+        o.status,
+        o."paymentStatus",
+        o."trackingNumber",
+        o."paymentId",
+        o."razorpayOrderId",
+        o."orderDate",
+        o."updatedAt",
+        u.id AS "userId",
+        u.username AS "username",
+        u.email AS "userEmail",
+        oi.id AS "orderItemId",
+        oi.quantity,
+        oi.price AS "itemPrice",
+        p.id AS "productId",
+        p.name AS "productName",
+        p.price AS "productPrice",
+        p.discount,
+        p.images,
+        p.description,
+        p.slug
+      FROM "Order" o
+      JOIN "User" u ON o."userId" = u.id
+      JOIN "OrderItem" oi ON oi."orderId" = o.id
+      JOIN "Product" p ON oi."productId" = p.id
+      ORDER BY o."orderDate" DESC
+    `);
+
+    return NextResponse.json(results);
   } catch (error) {
-    console.error('Orders fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch orders' },
-      { status: 500 }
-    );
+    console.error('Error fetching orders:', error);
+    return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }

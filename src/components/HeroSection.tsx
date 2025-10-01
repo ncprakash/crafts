@@ -1,281 +1,287 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-
 const PolaroidSection = () => {
   const polaroids = [
     {
       id: 1,
       title: "MEMORIES",
-      hoverImage: "/polaroid1.jpg",
-      bgColor: "bg-amber-50",
-      icon: "📸"
+      description: "Capture life's precious moments",
+      image: "/mem.jpeg",
+      bgColor: "from-amber-100 to-amber-200",
+ 
     },
     {
       id: 2,
       title: "MOMENTS",
-      hoverImage: "/polaroid2.jpg",
-      bgColor: "bg-rose-50",
-      icon: "✨"
+      description: "Celebrate every special second",
+      image: "/memories.jpg",
+      bgColor: "from-rose-100 to-rose-200",
+
     },
     {
       id: 3,
       title: "STORIES",
-      hoverImage: "/polaroid3.jpg",
-      bgColor: "bg-blue-50",
-      icon: "📖"
-    },
-    {
-      id: 4,
-      title: "ADVENTURES",
-      hoverImage: "/polaroid4.jpg",
-      bgColor: "bg-purple-50",
-      icon: "🌟"
-    },
-    {
-      id: 5,
-      title: "SMILES",
-      hoverImage: "/polaroid5.jpg",
-      bgColor: "bg-green-50",
-      icon: "😊"
+      description: "Share your unique journey",
+      image: "/me.jpeg",
+      bgColor: "from-blue-100 to-blue-200",
+    
     }
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
 
   useEffect(() => {
+    if (!isAutoPlaying) return;
+    
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === polaroids.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 4000);
+      setCurrentIndex((prev) => (prev + 1) % polaroids.length);
+    }, 3500);
     
     return () => clearInterval(interval);
-  }, [polaroids.length]);
+  }, [polaroids.length, isAutoPlaying]);
 
-  const visiblePolaroids = [
-    polaroids[(currentIndex) % polaroids.length],
-    polaroids[(currentIndex + 1) % polaroids.length],
-    polaroids[(currentIndex + 2) % polaroids.length]
-  ];
+  const goToSlide = (index:number) => {
+    setCurrentIndex(index);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 5000);
+  };
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % polaroids.length);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 5000);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + polaroids.length) % polaroids.length);
+    setIsAutoPlaying(false);
+    setTimeout(() => setIsAutoPlaying(true), 5000);
+  };
 
   return (
-    <section className="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-gradient-to-br from-[#f9f5f0] via-white to-[#f9f5f0] overflow-hidden min-h-screen">
-      {/* Enhanced decorative elements */}
-      <div className="absolute inset-0 opacity-15">
-        <motion.div 
-          animate={{ 
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            rotate: [0, 180, 360]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/4 left-1/4 w-20 sm:w-40 h-20 sm:h-40 rounded-full bg-[#D6B45C] mix-blend-multiply filter blur-xl"
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, -100, 0],
-            y: [0, 50, 0],
-            rotate: [360, 180, 0]
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-1/3 right-1/4 w-30 sm:w-60 h-30 sm:h-60 rounded-full bg-[#0A1D44] mix-blend-multiply filter blur-xl"
-        />
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3]
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/2 left-1/2 w-16 sm:w-32 h-16 sm:h-32 rounded-full bg-[#f3d78a] mix-blend-multiply filter blur-lg"
+    <section className="relative py-16 md:py-24 lg:py-32 px-4 bg-gradient-to-b from-white via-[#faf8f5] to-white overflow-hidden">
+      
+      {/* Subtle background decoration */}
+      <div className="absolute inset-0 opacity-[0.03]">
+        <div className="absolute top-0 left-0 w-full h-full" 
+             style={{
+               backgroundImage: `radial-gradient(circle at 2px 2px, #D6B45C 1px, transparent 1px)`,
+               backgroundSize: '40px 40px'
+             }}
         />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Enhanced Section Title */}
+        
+        {/* Header Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-12 sm:mb-16 md:mb-24"
+          className="text-center mb-12 md:mb-20"
         >
-          <motion.div
-            initial={{ scale: 0.8 }}
-            whileInView={{ scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="inline-block mb-4 sm:mb-6"
-          >
-           
-          </motion.div>
+       
           
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            viewport={{ once: true }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-serif font-bold text-[#0A1D44] mb-6 sm:mb-8 leading-tight"
-          >
-            FIND YOUR
-            <span className="block bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] bg-clip-text text-transparent">
-              VIBE
+          <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-[#0A1D44] mb-4 tracking-tight">
+            Find Your
+            <span className="block mt-2 bg-gradient-to-r from-[#D6B45C] via-[#f3d78a] to-[#D6B45C] bg-clip-text text-transparent">
+              Perfect Vibe
             </span>
-          </motion.h2>
+          </h2>
           
-          <motion.div 
-            initial={{ width: 0 }}
-            whileInView={{ width: "4rem sm:6rem" }}
-            transition={{ duration: 1, delay: 0.5 }}
-            viewport={{ once: true }}
-            className="h-1 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] mx-auto mb-6 sm:mb-8"
-          />
+          <div className="w-20 h-1 bg-gradient-to-r from-transparent via-[#D6B45C] to-transparent mx-auto my-6" />
           
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            viewport={{ once: true }}
-            className="text-lg sm:text-xl md:text-2xl text-[#9C6B3B] max-w-2xl sm:max-w-3xl mx-auto leading-relaxed px-4"
-          >
+          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
             Discover unique handmade crafts that tell your story
-          </motion.p>
+          </p>
         </motion.div>
 
-        {/* Enhanced Polaroids Carousel */}
-        <div 
-          className="relative h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] w-full"
-        >
-          {visiblePolaroids.map((polaroid, index) => (
-            <motion.div
-              key={polaroid.id}
-              initial={{ opacity: 0, x: index === 1 ? 100 : -100, scale: 0.8 }}
-              animate={{ 
-                opacity: 1,
-                x: 0,
-                zIndex: index === 1 ? 10 : 5,
-                scale: index === 1 ? 1.1 : 0.9,
-                y: index === 1 ? 0 : index === 0 ? -20 : 20
-              }}
-              transition={{ 
-                type: "spring", 
-                stiffness: 300,
-                damping: 20,
-                delay: index * 0.2
-              }}
-              className={`absolute top-1/2 left-1/2 w-full max-w-sm sm:max-w-md md:max-w-lg h-[300px] sm:h-[350px] md:h-[450px] ${
-                index === 0 ? '-translate-x-[120%] sm:-translate-x-[130%]' : 
-                index === 2 ? 'translate-x-[20%] sm:translate-x-[30%]' : ''
-              }`}
-            >
-              <div className="relative h-full w-full group">
-                {/* Enhanced Polaroid Frame */}
-                <motion.div
-                  whileHover={{ 
-                    scale: 1.08,
-                    rotateY: 5,
-                    rotateX: 5
-                  }}
-                  className={`absolute inset-0 ${polaroid.bgColor} shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center rounded-2xl border-4 sm:border-8 border-white`}
-                >
-                  <motion.div
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-4"
-                  >
-                    {polaroid.icon}
-                  </motion.div>
+        {/* Main Carousel Container */}
+        <div className="relative max-w-6xl mx-auto">
+          
+          {/* Desktop/Tablet: Grid Layout with 3 Cards */}
+          <div className="hidden md:grid md:grid-cols-3 gap-6 lg:gap-8 mb-12">
+            {polaroids.map((polaroid, index) => (
+              <motion.div
+                key={polaroid.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -12, scale: 1.03 }}
+                onClick={() => goToSlide(index)}
+          
+                onMouseLeave={() => setHoveredIndex(null)}
+                className={`cursor-pointer transition-all duration-300 ${
+                  currentIndex === index ? 'ring-4 ring-[#D6B45C] ring-offset-4' : ''
+                }`}
+              >
+                <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 h-full border-8 border-white relative overflow-hidden group">
                   
-                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 text-center leading-tight">
-                    {polaroid.title}
-                  </h3>
-                </motion.div>
+                  {/* Image Container */}
+                  <div className="relative w-full h-64 mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                    <img 
+                      src={polaroid.image}
+                      alt={polaroid.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    
+                    {/* Overlay on hover */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: hoveredIndex === index ? 1 : 0 }}
+                      className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent flex items-end justify-center pb-4"
+                    >
+                      <span className="text-white text-sm font-semibold">Click to explore</span>
+                    </motion.div>
+                  </div>
 
-                {/* Enhanced Hover Effects */}
+                  {/* Content */}
+                  <div className="text-center">
+                    <motion.div
+                      animate={{ 
+                        rotate: currentIndex === index ? [0, 5, -5, 0] : 0,
+                        scale: currentIndex === index ? [1, 1.1, 1] : 1
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-4xl mb-3"
+                    >
+                   
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                      {polaroid.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {polaroid.description}
+                    </p>
+                  </div>
+
+                  {/* Corner accent */}
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#D6B45C]/20 to-transparent rounded-bl-full" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Mobile: Single Card Carousel */}
+          <div className="md:hidden relative">
+            <div className="relative h-[550px] mb-8">
+              <AnimatePresence mode="wait">
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  className="absolute inset-0 overflow-hidden rounded-2xl"
+                  key={currentIndex}
+                  initial={{ opacity: 0, scale: 0.8, rotateY: -20 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, rotateY: 20 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute inset-0 flex items-center justify-center px-6"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-200 via-amber-300 to-amber-400 opacity-90 group-hover:opacity-100 transition-all duration-700"></div>
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-all duration-700"></div>
-                  
-                  {/* Floating particles effect */}
-                  <motion.div
-                    animate={{ 
-                      y: [0, -20, 0],
-                      opacity: [0.3, 0.8, 0.3]
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full"
-                  />
-                  <motion.div
-                    animate={{ 
-                      y: [0, 20, 0],
-                      opacity: [0.5, 1, 0.5]
-                    }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute bottom-6 left-6 w-1 h-1 bg-white rounded-full"
-                  />
-                </motion.div>
+                  <div className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm border-8 border-white">
+                    
+                    {/* Image */}
+                    <div className="relative w-full h-64 mb-6 rounded-2xl overflow-hidden">
+                      <img 
+                        src={polaroids[currentIndex].image}
+                        alt={polaroids[currentIndex].title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-                {/* Enhanced Border */}
-                <div className="absolute inset-0 border-4 sm:border-8 border-white group-hover:border-[#D6B45C] transition-all duration-700 rounded-2xl shadow-2xl"></div>
-              </div>
-            </motion.div>
-          ))}
+                    {/* Content */}
+                    <motion.div
+                      animate={{ 
+                        rotate: [0, 10, -10, 0],
+                        scale: [1, 1.15, 1]
+                      }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="text-6xl mb-4 text-center"
+                    >
+                      {polaroids[currentIndex].image}
+                    </motion.div>
+                    <h3 className="text-3xl font-bold text-gray-800 mb-3 text-center">
+                      {polaroids[currentIndex].title}
+                    </h3>
+                    <p className="text-base text-gray-600 text-center">
+                      {polaroids[currentIndex].description}
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Navigation Arrows */}
+              <button
+                onClick={prevSlide}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-[#D6B45C] text-gray-800 hover:text-white p-4 rounded-full shadow-lg transition-all duration-300"
+                aria-label="Previous"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={nextSlide}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-[#D6B45C] text-gray-800 hover:text-white p-4 rounded-full shadow-lg transition-all duration-300"
+                aria-label="Next"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Dot Indicators */}
+          <div className="flex justify-center items-center gap-3">
+            {polaroids.map((_, index) => (
+              <motion.button
+                key={index}
+                whileHover={{ scale: 1.3 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => goToSlide(index)}
+                className={`transition-all duration-300 rounded-full ${
+                  currentIndex === index 
+                    ? 'bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] w-12 h-4' 
+                    : 'bg-gray-300 hover:bg-[#D6B45C]/50 w-4 h-4'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Enhanced Carousel Controls */}
-        <div className="flex justify-center gap-2 sm:gap-4 mt-8 sm:mt-12">
-          {polaroids.map((_, index) => (
-            <motion.button
-              key={index}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.8 }}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
-                currentIndex === index 
-                  ? 'bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] w-8 sm:w-12' 
-                  : 'bg-gray-300 hover:bg-[#D6B45C]/50'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-
-        {/* Enhanced Shop Now Button */}
+        {/* Shop Now Button */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mt-16 sm:mt-20 md:mt-24"
+          className="text-center mt-16 md:mt-20"
         >
-          <Link href={"/shop"}>
-            <motion.button 
-              whileHover={{ 
-                scale: 1.05,
-                boxShadow: "0 25px 50px -12px rgba(214, 180, 92, 0.4)"
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 sm:px-12 md:px-16 py-4 sm:py-6 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] text-[#0A1D44] text-lg sm:text-xl font-bold rounded-full hover:from-[#f3d78a] hover:to-[#D6B45C] transition-all duration-500 shadow-2xl hover:shadow-3xl flex items-center gap-2 sm:gap-3 mx-auto group"
+         <Link href="/shop"> <motion.button 
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: "0 20px 40px -12px rgba(214, 180, 92, 0.5)"
+            }}
+            whileTap={{ scale: 0.98 }}
+            className="px-10 sm:px-14 py-5 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] text-[#0A1D44] text-lg font-bold rounded-full hover:from-[#f3d78a] hover:to-[#D6B45C] transition-all duration-500 shadow-xl hover:shadow-2xl inline-flex items-center gap-3 group"
+          >
+            <span>Start Shopping</span>
+            <motion.svg 
+              className="h-6 w-6"
+              animate={{ x: [0, 5, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
             >
-              <span>Start Shopping</span>
-              <motion.svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-5 w-5 sm:h-6 sm:w-6"
-                animate={{ x: [0, 8, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </motion.svg>
-            </motion.button>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </motion.svg>
+          </motion.button>
           </Link>
         </motion.div>
       </div>

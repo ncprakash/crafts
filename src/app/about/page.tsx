@@ -34,14 +34,7 @@ export default function AboutPage() {
             transition={{ duration: 0.7 }}
             className="text-center"
           >
-            <motion.div
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-24 h-24 mx-auto bg-gradient-to-br from-[#FDC93B] to-[#e4b230] rounded-full flex items-center justify-center mb-6"
-            >
-              <Sparkles className="w-12 h-12 text-white" />
-            </motion.div>
+            
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">About Gunnal Creations</h2>
             <p className="text-gray-200 max-w-2xl mx-auto text-lg">
               Crafting joy with every handmade creation, made with love and wrapped in care.
@@ -73,7 +66,7 @@ export default function AboutPage() {
             </div>
             <div className="bg-gradient-to-br from-[#FDC93B]/10 to-[#e4b230]/10 rounded-xl flex items-center justify-center p-8">
               <div className="w-64 h-64 bg-gradient-to-br from-[#FDC93B] to-[#e4b230] rounded-full flex items-center justify-center">
-                <Heart className="w-32 h-32 text-white opacity-20" />
+             <Image src="/memories.jpg" alt="About" width={256} height={256} />
               </div>
             </div>
           </motion.div>
@@ -129,8 +122,8 @@ export default function AboutPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { number: "1000+", label: "Happy Customers", icon: Users },
-                { number: "500+", label: "Products Created", icon: Award },
+                { number: "100+", label: "Happy Customers", icon: Users },
+                { number: "50+", label: "Products Created", icon: Award },
                 { number: "50+", label: "Cities Served", icon: Target },
                 { number: "100%", label: "Handmade", icon: Heart }
               ].map((stat, i) => (

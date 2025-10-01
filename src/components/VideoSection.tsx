@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 const VideoSection = () => {
   const videos = [
@@ -8,23 +9,24 @@ const VideoSection = () => {
       id: 1,
       title: "Crafting Memories",
       description: "Watch our artisans create beautiful handmade crafts",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", 
-      thumbnail: "/video-thumb1.jpg"
+      videoUrl: "https://www.instagram.com/reel/DE9ykjTPVc6/", 
+      thumbnail: "/video.jpeg"
     },
     {
       id: 2,
       title: "Behind the Scenes",
       description: "See how we bring your ideas to life",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      thumbnail: "/video-thumb2.jpg"
+      videoUrl: "https://www.youtube.com/watch?v=k7mJwypHU0o",
+      thumbnail: "/ved2.jpeg",
     },
-    {
-      id: 3,
-      title: "Customer Stories",
-      description: "Real people, real experiences with our products",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      thumbnail: "/video-thumb3.jpg"
-    }
+  {
+    id:3,
+    title:"first-day",
+    description:"2022-2025",
+    videoUrl:"https://www.instagram.com/reel/DEC0JFFvYo_/",
+    thumbnail:"/ved3.jpeg"
+  }
+ 
   ];
 
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -97,28 +99,26 @@ const VideoSection = () => {
             >
               {/* Video Container */}
               <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden shadow-2xl">
-                {/* Video Placeholder - Replace with actual video */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#D6B45C] to-[#f3d78a] flex items-center justify-center">
-                  <div className="text-center text-white px-4">
-                    <div className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">🎬</div>
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">{currentVideo.title}</h3>
-                    <p className="text-sm sm:text-base md:text-lg opacity-90">{currentVideo.description}</p>
-                  </div>
-                </div>
-                
-                {/* Play Button Overlay */}
-                <motion.div 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                    <div className="w-0 h-0 border-l-[16px] sm:border-l-[20px] border-l-white border-t-[10px] sm:border-t-[12px] border-t-transparent border-b-[10px] sm:border-b-[12px] border-b-transparent ml-1"></div>
-                  </div>
-                </motion.div>
-              </div>
+  {/* Thumbnail Image */}
+  <img
+    src={currentVideo.thumbnail}
+    alt={currentVideo.title}
+    className="absolute inset-0 w-full h-full object-cover"
+  />
 
+  {/* Play Button Overlay */}
+  <motion.div 
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    className="absolute inset-0 flex items-center justify-center cursor-pointer"
+    onClick={() => window.open(currentVideo.videoUrl, "_blank")} // <-- open external video
+  >
+    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
+      <div className="w-0 h-0 border-l-[16px] sm:border-l-[20px] border-l-white border-t-[10px] sm:border-t-[12px] border-t-transparent border-b-[10px] sm:border-b-[12px] border-b-transparent ml-1"></div>
+    </div>
+  </motion.div>
+</div>
+              
               {/* Video Info Overlay */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -159,9 +159,11 @@ const VideoSection = () => {
           viewport={{ once: true }}
           className="text-center mt-12 sm:mt-16"
         >
+          <Link href="https://www.instagram.com/gunnal.creations/reels/">
           <button className="px-8 sm:px-10 md:px-12 py-3 sm:py-4 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] text-[#0A1D44] text-base sm:text-lg font-medium rounded-full hover:from-[#f3d78a] hover:to-[#D6B45C] transition-all duration-500 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
             Explore More Videos
           </button>
+          </Link>
         </motion.div>
       </div>
     </section>

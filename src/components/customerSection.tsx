@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { Link } from 'lucide-react';
 
 const testimonials = [
   {
@@ -136,15 +137,7 @@ export default function PolaroidTestimonials() {
       </div>
 
       {/* Button */}
-      <div className="text-center mt-20 sm:mt-24 md:mt-32 z-10 relative">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="px-6 sm:px-8 py-2 sm:py-3 bg-[#0A1D44] text-white rounded-full shadow-lg hover:bg-[#D6B45C] transition-colors text-sm sm:text-base"
-        >
-          View More Memories
-        </motion.button>
-      </div>
+    
       
     </section>
   );

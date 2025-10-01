@@ -46,61 +46,40 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      // Mock data - replace with actual API call
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          username: 'john_doe',
-          email: 'john@example.com',
-          role: 'user',
-          isVerified: true,
-          createdAt: '2024-01-01',
-          lastLogin: '2024-01-15',
-          totalOrders: 5,
-          totalSpent: 299.95
+      const response = await fetch('/api/user', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          id: '2',
-          username: 'jane_smith',
-          email: 'jane@example.com',
-          role: 'user',
-          isVerified: true,
-          createdAt: '2024-01-05',
-          lastLogin: '2024-01-14',
-          totalOrders: 3,
-          totalSpent: 119.97
-        },
-        {
-          id: '3',
-          username: 'admin_user',
-          email: 'admin@example.com',
-          role: 'admin',
-          isVerified: true,
-          createdAt: '2023-12-01',
-          lastLogin: '2024-01-15',
-          totalOrders: 0,
-          totalSpent: 0
-        },
-        {
-          id: '4',
-          username: 'mike_johnson',
-          email: 'mike@example.com',
-          role: 'user',
-          isVerified: false,
-          createdAt: '2024-01-10',
-          lastLogin: '2024-01-12',
-          totalOrders: 1,
-          totalSpent: 29.99
-        }
-      ];
-      setUsers(mockUsers);
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      
+      // Transform API data to match User interface
+      const transformedUsers: User[] = data.map((user: any) => ({
+        id: user.id.toString(),
+        username: user.username,
+        email: user.email,
+        role: user.role || 'user',
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        lastLogin: user.updatedAt,
+        totalOrders: 0, // These would come from order data
+        totalSpent: 0,
+        phoneNum: user.phone_num
+      }));
+      
+      setUsers(transformedUsers);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching users:', error);
       setLoading(false);
     }
   };
-
   const filterUsers = () => {
     let filtered = users;
 

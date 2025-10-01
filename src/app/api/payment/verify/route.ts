@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { sendPaymentSuccessEmail } from '@/lib/confirm'; // <-- import email function
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,8 +64,19 @@ export async function POST(request: NextRequest) {
         paymentId: razorpay_payment_id,
         paymentStatus: 'paid',
         status: 'confirmed'
-      }
+      },
+      include: { user: true } // include user to get email
     });
+
+    // ✅ Send payment success email
+    if (updatedOrder.user?.email) {
+      await sendPaymentSuccessEmail(
+        updatedOrder.user.email,
+        updatedOrder.customerName,
+        updatedOrder.id,
+        updatedOrder.total
+      );
+    }
 
     return NextResponse.json({
       success: true,
