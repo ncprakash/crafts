@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         updatedOrder.user.email,
         updatedOrder.customerName,
         updatedOrder.id,
-        updatedOrder.total
+        updatedOrder.total.toNumber()
       );
     }
 
