@@ -21,7 +21,7 @@ const Footer = () => {
           <p className="text-[#D6B45C] italic mb-6">Handcrafted with love, designed for life</p>
           <div className="flex gap-4">
             {['facebook', 'instagram', 'twitter'].map((social) => (
-              <Link href="#" key={social} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#D6B45C] transition-colors duration-300">
+              <Link href="https://www.instagram.com/_niru_gunnal/" key={social} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#D6B45C] transition-colors duration-300">
                 <span className="text-white capitalize">{social[0]}</span>
               </Link>
             ))}
@@ -36,7 +36,7 @@ const Footer = () => {
         >
           <h4 className="text-lg font-bold mb-4">Quick Links</h4>
           <ul className="space-y-2">
-            {['Home', 'Shop', 'About Us', 'Contact'].map((link) => (
+            {[ 'Shop', 'About', 'Contacts'].map((link) => (
               <li key={link}>
                 <Link href={`/${link.toLowerCase().replace(' ', '-')}`} className="text-white/80 hover:text-[#D6B45C] transition-colors duration-300">
                   {link}

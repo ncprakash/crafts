@@ -1,16 +1,17 @@
-// src/lib/db.ts
 import { PrismaClient } from '@prisma/client';
 
 declare global {
-  // Prevent TypeScript error on hot reload
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
-export const db: PrismaClient =
+export const db =
   global.prisma ??
   new PrismaClient({
-    log: ['query'], // optional, remove if too verbose
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL + '?pgbouncer=true&connection_limit=1&prepared_statements=false'
+      }
+    }
   });
 
 if (process.env.NODE_ENV !== 'production') global.prisma = db;

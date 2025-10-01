@@ -28,6 +28,7 @@ interface Order {
   orderDate: string;
   trackingNumber: string | null;
   items: OrderItem[];
+  userId?: string;
 }
 
 function DashboardPageContent() {
@@ -46,11 +47,42 @@ function DashboardPageContent() {
 
   useEffect(() => {
     async function fetchOrders() {
+      if (!session?.user?.id) {
+        console.log("No user ID available");
+        setLoadingOrders(false);
+        return;
+      }
+
       try {
-        const res = await fetch('/api/orders?status=confirmed&paymentStatus=paid');
-        if (!res.ok) throw new Error('Failed to fetch orders');
+        console.log("Fetching orders for user:", session.user.id);
+        const res = await fetch(`/api/orders?userId=${session.user.email}`);
+        
+        if (!res.ok) {
+          console.error('Failed to fetch orders, status:', res.status);
+          throw new Error('Failed to fetch orders');
+        }
+        
         const data = await res.json();
-        setOrders(data.orders || []);
+        console.log("API Response:", data);
+        
+        // Handle different response structures
+        let ordersArr: Order[] = [];
+        if (Array.isArray(data)) {
+          ordersArr = data;
+        } else if (data.orders && Array.isArray(data.orders)) {
+          ordersArr = data.orders;
+        } else if (data.data && Array.isArray(data.data)) {
+          ordersArr = data.data;
+        }
+        
+        // Filter orders by userId on client side as backup
+        const userOrders = ordersArr.filter(order => 
+          order.userId === session.user.id || 
+          !order.userId // Include orders without userId field (legacy data)
+        );
+        
+        console.log("Filtered user orders:", userOrders);
+        setOrders(userOrders);
       } catch (err) {
         console.error('Error fetching orders:', err);
         setOrders([]);
@@ -58,7 +90,7 @@ function DashboardPageContent() {
         setLoadingOrders(false);
       }
     }
-
+    
     if (session?.user?.id) {
       fetchOrders();
     }
@@ -182,7 +214,7 @@ function DashboardPageContent() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2">
-                Welcome back, {session.user?.username}!
+                Welcome back, {session.user?.username || session.user?.name || 'User'}!
               </h1>
               <p className="text-gray-600">Manage your account and explore our products</p>
             </div>
@@ -207,7 +239,7 @@ function DashboardPageContent() {
                   <User className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-white">
-                  <h2 className="text-2xl font-bold">{session.user?.username}</h2>
+                  <h2 className="text-2xl font-bold">{session.user?.username || session.user?.name || 'User'}</h2>
                   <p className="text-blue-100">Account Details</p>
                 </div>
               </div>
@@ -310,23 +342,30 @@ function DashboardPageContent() {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-4 border-b border-gray-100">
                     <div className="mb-4 md:mb-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">Order #{order.id.slice(0, 8)}</h3>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          Order #{order.id?.slice(0, 8).toUpperCase() || 'N/A'}
+                        </h3>
                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                          {order.status.toUpperCase()}
+                          {(order.status || 'pending').toUpperCase()}
                         </span>
+                      </div>
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-700 font-medium">
+                          Customer: {order.customerName || 'N/A'}
+                        </p>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>{new Date(order.orderDate).toLocaleDateString('en-US', { 
+                          <span>{order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             year: 'numeric' 
-                          })}</span>
+                          }) : 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <CreditCard className="w-4 h-4" />
-                          <span className="capitalize">{order.paymentStatus}</span>
+                          <span className="capitalize">{order.paymentStatus || 'Pending'}</span>
                         </div>
                         {order.trackingNumber && (
                           <div className="flex items-center gap-1">
@@ -338,39 +377,44 @@ function DashboardPageContent() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                      <p className="text-2xl font-bold text-gray-900">₹{Number(order.total).toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        ₹{order.total != null ? Number(order.total).toFixed(2) : '0.00'}
+                      </p>
                     </div>
                   </div>
 
                   {/* Order Items */}
                   <div className="space-y-4">
-                    {order.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="relative w-20 h-20 flex-shrink-0 bg-white rounded-lg overflow-hidden border border-gray-200">
-                          <Image
-                            src={getImageUrl(item.product.images)}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1 truncate">{item.product.name}</h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span>Qty: {item.quantity}</span>
-                            <span>•</span>
-                            <span className="font-semibold text-gray-900">₹{Number(item.price).toFixed(2)} each</span>
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item, itemIndex) => (
+                        <div key={`${order.id}-${item.id}-${itemIndex}`} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="relative w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                            <Image
+                              src={getImageUrl(item.product?.images || '')}
+                              alt={item.product?.name || 'Product'}
+                              fill
+                              className="object-cover"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 truncate">
+                              {item.product?.name || 'Product'}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Quantity: {item.quantity || 0} × ₹{Number(item.price || 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-gray-900">
+                              ₹{(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600 mb-1">Subtotal</p>
-                          <p className="text-lg font-bold text-gray-900">₹{(Number(item.price) * item.quantity).toFixed(2)}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">No items in this order</p>
+                    )}
                   </div>
                 </div>
               ))}
