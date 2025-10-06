@@ -2,10 +2,15 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcrypt";
 
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
+  providers: [GoogleProvider({
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  }),
     CredentialsProvider({
       name: "credentials",
       credentials: {

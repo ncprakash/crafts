@@ -1,13 +1,11 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native"]  // <-- force Node engine
+  binaryTargets = ["native"] // <-- force Node engine
 }
-
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-   
 }
 
 model User {
@@ -50,6 +48,9 @@ model Product {
   featured    Boolean     @default(false)
   slug        String      @unique
   images      String
+  cloudinaryImages String[] // Array of Cloudinary image URLs
+  allowsCustomization Boolean @default(false) // Whether product allows custom uploads (e.g. Polaroid)
+  customizationType String? // Type of customization (e.g. "polaroid", "phoneCase")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
@@ -81,8 +82,13 @@ model OrderItem {
   productId String
   quantity  Int
   price     Decimal
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+
+  // 🧩 NEW FIELDS for customization
+  phoneType String? // for phone case orders
+  imageUrls String[] // for polaroid uploads (store array of URLs)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Testimonial {

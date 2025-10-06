@@ -8,7 +8,7 @@ import { ShoppingBag, ShoppingCart, Package, LogOut, User, Mail, CheckCircle2, C
 import Image from 'next/image';
 
 interface OrderItem {
-  id: string;
+  orderItemId: string;
   quantity: number;
   price: number;
   product: {
@@ -20,7 +20,7 @@ interface OrderItem {
 }
 
 interface Order {
-  id: string;
+  orderId: string;
   customerName: string;
   total: number;
   status: string;
@@ -30,6 +30,7 @@ interface Order {
   items: OrderItem[];
   userId?: string;
 }
+
 
 function DashboardPageContent() {
   const { data: session, status } = useSession();
@@ -47,41 +48,28 @@ function DashboardPageContent() {
 
   useEffect(() => {
     async function fetchOrders() {
-      if (!session?.user?.id) {
-        console.log("No user ID available");
+      if (!session?.user?.email) {
+        console.log("No user email available");
         setLoadingOrders(false);
         return;
       }
-
+  
       try {
-        console.log("Fetching orders for user:", session.user.id);
-        const res = await fetch(`/api/orders?userId=${session.user.email}`);
-        
+        // Send email as query param to API
+        const res = await fetch(`/api/get-orders?email=${encodeURIComponent(session.user.email)}`);
+  
         if (!res.ok) {
           console.error('Failed to fetch orders, status:', res.status);
           throw new Error('Failed to fetch orders');
         }
-        
+  
         const data = await res.json();
         console.log("API Response:", data);
-        
-        // Handle different response structures
-        let ordersArr: Order[] = [];
-        if (Array.isArray(data)) {
-          ordersArr = data;
-        } else if (data.orders && Array.isArray(data.orders)) {
-          ordersArr = data.orders;
-        } else if (data.data && Array.isArray(data.data)) {
-          ordersArr = data.data;
-        }
-        
-        // Filter orders by userId on client side as backup
-        const userOrders = ordersArr.filter(order => 
-          order.userId === session.user.id || 
-          !order.userId // Include orders without userId field (legacy data)
-        );
-        
-        console.log("Filtered user orders:", userOrders);
+  
+        // Assuming API returns { data: [...] }
+        const userOrders: Order[] = Array.isArray(data.data) ? data.data : [];
+  
+        console.log("User orders:", userOrders);
         setOrders(userOrders);
       } catch (err) {
         console.error('Error fetching orders:', err);
@@ -90,11 +78,12 @@ function DashboardPageContent() {
         setLoadingOrders(false);
       }
     }
-    
-    if (session?.user?.id) {
+  
+    if (session?.user?.email) {
       fetchOrders();
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.email]);
+  
 
   useEffect(() => {
     if (searchParams.get('order') === 'success') {
@@ -308,119 +297,120 @@ function DashboardPageContent() {
 
         {/* Recent Orders */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Your Orders</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Package className="w-4 h-4" />
-              <span>{orders.length} {orders.length === 1 ? 'Order' : 'Orders'}</span>
+  {/* Header */}
+  <div className="flex items-center justify-between mb-6">
+    <h2 className="text-2xl font-bold text-gray-900">Your Orders</h2>
+    <div className="flex items-center gap-2 text-sm text-gray-600">
+      <Package className="w-4 h-4" />
+      <span>{orders.length} {orders.length === 1 ? 'Order' : 'Orders'}</span>
+    </div>
+  </div>
+
+  {/* Loading / Empty / Orders */}
+  {loadingOrders ? (
+    <div className="flex items-center justify-center py-12">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+    </div>
+  ) : orders.length === 0 ? (
+    <div className="text-center py-12">
+      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Package className="w-10 h-10 text-gray-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Orders Yet</h3>
+      <p className="text-gray-600 mb-6">Start shopping to see your orders here!</p>
+      <Button onClick={() => router.push('/shop')} className="bg-gradient-to-r from-blue-500 to-blue-600">
+        Browse Products
+      </Button>
+    </div>
+  ) : (
+    <div className="space-y-6">
+      {orders.map((order) => (
+        <div
+          key={order.orderId}
+          className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300"
+        >
+          {/* Order Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-4 border-b border-gray-100">
+            <div className="mb-4 md:mb-0">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Order #{order.orderId?.slice(0, 8).toUpperCase() || 'N/A'}
+                </h3>
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  {(order.status || 'pending').toUpperCase()}
+                </span>
+              </div>
+              <div className="mb-3">
+                <p className="text-sm text-gray-700 font-medium">
+                  Customer: {order.customerName || 'N/A'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', { 
+                    month: 'short', day: 'numeric', year: 'numeric' 
+                  }) : 'N/A'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CreditCard className="w-4 h-4" />
+                  <span className="capitalize">{order.paymentStatus || 'Pending'}</span>
+                </div>
+                {order.trackingNumber && (
+                  <div className="flex items-center gap-1">
+                    <Truck className="w-4 h-4" />
+                    <span>{order.trackingNumber}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600 mb-1">Total Amount</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ₹{order.total != null ? Number(order.total).toFixed(2) : '0.00'}
+              </p>
             </div>
           </div>
 
-          {loadingOrders ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Orders Yet</h3>
-              <p className="text-gray-600 mb-6">Start shopping to see your orders here!</p>
-              <Button onClick={() => router.push('/shop')} className="bg-gradient-to-r from-blue-500 to-blue-600">
-                Browse Products
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300"
-                >
-                  {/* Order Header */}
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-4 border-b border-gray-100">
-                    <div className="mb-4 md:mb-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">
-                          Order #{order.id?.slice(0, 8).toUpperCase() || 'N/A'}
-                        </h3>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                          {(order.status || 'pending').toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-700 font-medium">
-                          Customer: {order.customerName || 'N/A'}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          }) : 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CreditCard className="w-4 h-4" />
-                          <span className="capitalize">{order.paymentStatus || 'Pending'}</span>
-                        </div>
-                        {order.trackingNumber && (
-                          <div className="flex items-center gap-1">
-                            <Truck className="w-4 h-4" />
-                            <span>{order.trackingNumber}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        ₹{order.total != null ? Number(order.total).toFixed(2) : '0.00'}
-                      </p>
-                    </div>
+          {/* Order Items */}
+          <div className="space-y-4">
+            {order.items && order.items.length > 0 ? (
+              order.items.map((item) => (
+                <div key={`${order.orderId}-${item.orderItemId}`} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="relative w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                    <Image
+                      src={getImageUrl(item.product?.images || '')}
+                      alt={item.product?.name || 'Product'}
+                      fill
+                      className="object-cover"
+                      style={{ objectFit: 'cover' }}
+                    />
                   </div>
-
-                  {/* Order Items */}
-                  <div className="space-y-4">
-                    {order.items && order.items.length > 0 ? (
-                      order.items.map((item, itemIndex) => (
-                        <div key={`${order.id}-${item.id}-${itemIndex}`} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                          <div className="relative w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-                            <Image
-                              src={getImageUrl(item.product?.images || '')}
-                              alt={item.product?.name || 'Product'}
-                              fill
-                              className="object-cover"
-                              style={{ objectFit: 'cover' }}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">
-                              {item.product?.name || 'Product'}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity || 0} × ₹{Number(item.price || 0).toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-gray-900">
-                              ₹{(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 text-sm">No items in this order</p>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 truncate">
+                      {item.product?.name || 'Product'}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Quantity: {item.quantity || 0} × ₹{Number(item.price || 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-900">
+                      ₹{(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm">No items in this order</p>
+            )}
+          </div>
         </div>
+      ))}
+    </div>
+  )}
+</div>
+
 
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl shadow-lg p-8">

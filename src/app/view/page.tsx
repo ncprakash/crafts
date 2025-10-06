@@ -7,6 +7,10 @@ import { motion } from 'framer-motion';
 import { Star, Heart, ShoppingCart, ArrowLeft, Share2, MessageCircle, Package, Truck, Shield } from 'lucide-react';
 import Link from 'next/link';
 import Toast from '@/components/Toast';
+import ProductCustomizer, { CustomizationData } from '@/components/ProductCustomizer';
+
+// Inside component, add state:
+
 
 interface Product {
   id: string;
@@ -33,6 +37,8 @@ interface Testimonial {
 }
 
 function ViewPageContent() {
+  const [customizationData, setCustomizationData] = useState<CustomizationData | null>(null);
+const [showCustomizer, setShowCustomizer] = useState(false);
   const searchParams = useSearchParams();
   const productId = searchParams.get('id');
   const [product, setProduct] = useState<Product | null>(null);
@@ -96,8 +102,9 @@ function ViewPageContent() {
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: quantity
-        }),
+          quantity: quantity,
+          customization: customizationData // Add this
+        })
       });
 
       const data = await response.json();
@@ -126,14 +133,6 @@ function ViewPageContent() {
     }
   };
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-      />
-    ));
-  };
 
   if (loading) {
     return (
@@ -152,7 +151,8 @@ function ViewPageContent() {
       </section>
     );
   }
-
+  console.log('Category:', product.category.name);
+  console.log('Should show customizer:', product.category.name === 'Polaroid' || product.category.name === 'Phone Case' || null);
   if (!product) {
     return (
       <section className="min-h-screen relative flex justify-center items-center">
@@ -318,6 +318,33 @@ function ViewPageContent() {
                 </div>
               </div>
             </div>
+            {(product.category.name.toLowerCase().includes('polaroid') || 
+  product.category.name.toLowerCase().includes('phone case')) && (
+  <div className="mb-10 mt-6">
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 hover:shadow-md transition-all duration-300">
+      <h3 className="text-lg font-semibold text-gray-800 mb-3">
+         Personalize Your {product.category.name.toLowerCase().includes('polaroid') ? 'Polaroid' : 'Phone Case'}
+      </h3>
+      <p className="text-sm text-gray-500 mb-5">
+        Upload your images or choose customization options to make it uniquely yours.
+      </p>
+
+      <div className="bg-[#faf9f7] rounded-xl p-4 border border-gray-100">
+        <ProductCustomizer
+          productType={
+            product.category.name.toLowerCase().includes('polaroid')
+              ? 'polaroid'
+              : 'phoneCase'
+          }
+          onCustomizationComplete={(data) => {
+            setCustomizationData(data);
+            setShowCustomizer(false);
+          }}
+        />
+      </div>
+    </div>
+  </div>
+)}
           </motion.div>
         </div>
 

@@ -5,6 +5,7 @@ import { useCart } from '@/lib/cart-context';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import ProductCustomizer from '@/components/ProductCustomizer';
 
 export default function CheckoutPage() {
   const { data: session } = useSession();
@@ -321,6 +322,7 @@ export default function CheckoutPage() {
   }, [orderSuccess, countdown, router]);
 
   // Redirect if not signed in
+
   if (!session) {
     return (
       <div className="min-h-screen bg-[#f9f5f0] px-4 py-8 md:py-12 flex justify-center">
@@ -369,11 +371,9 @@ export default function CheckoutPage() {
           
           <div className="text-sm text-gray-500">
             <p>Redirecting to dashboard in {countdown} seconds...</p>
-            <p className="mt-2 text-orange-600">
-              <strong>Note:</strong> Additional COD charges may apply
-            </p>
+            
             <p className="mt-2">
-              <strong>Need help?</strong> Contact our support team at support@gunnalcrafts.com
+              <strong>Need help?</strong> Contact to gunnalcreation@gmail.com
             </p>
           </div>
         </div>
@@ -458,9 +458,12 @@ export default function CheckoutPage() {
                 <p className="text-gray-500 text-xs">Quantity: {item.quantity}</p>
               </div>
               <p className="font-bold text-right">{formatCurrency(item.price * item.quantity)}</p>
+          
             </div>
+            
           ))}
         </div>
+        
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Coupon Code */}
@@ -599,25 +602,8 @@ export default function CheckoutPage() {
                 </div>
               </label>
               
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="cod"
-                  checked={paymentMethod === 'cod'}
-                  onChange={(e) => setPaymentMethod(e.target.value as 'cod' | 'online')}
-                  className="w-4 h-4 text-[#FDC93B] bg-gray-100 border-gray-300 focus:ring-[#FDC93B] focus:ring-2"
-                />
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
-                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                  <span>Cash on Delivery (Pay when you receive)</span>
-                </div>
-              </label>
+            
+        
             </div>
           </div>
         </div>

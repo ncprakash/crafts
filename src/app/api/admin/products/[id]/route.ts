@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 
 // ✅ DO NOT TYPE the second argument at all (NO destructuring or custom type)
 export async function GET(req: NextRequest, context: any) {
-  const id = context.params.id;
+  const id = await context.params.id;
 
   try {
     const product = await db.product.findUnique({

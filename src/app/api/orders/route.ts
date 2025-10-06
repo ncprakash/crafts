@@ -171,8 +171,14 @@ export async function POST(request: NextRequest) {
 //     );
 //   }
 // }
-export async function GET() {
+export async function GET(req:Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
+    }
     const results = await db.$queryRawUnsafe(`
       SELECT 
         o.id AS "orderId",

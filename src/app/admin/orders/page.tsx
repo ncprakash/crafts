@@ -12,16 +12,22 @@ import {
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface OrderItem {
   id: string;
   productId: string;
   quantity: number;
   price: number;
+  phoneType?: string; // for phone case orders
+  imageUrls?: string[]; // for polaroid uploads (store array of URLs)
   product: {
     id: string;
     name: string;
     images: string;
+    cloudinaryImages?: string[];
   };
 }
 
@@ -56,6 +62,8 @@ export default function OrdersPage() {
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   
   // Tracking modal state
   const [isTrackingModalOpen, setTrackingModalOpen] = useState(false);
@@ -64,8 +72,20 @@ export default function OrdersPage() {
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    // Check if user is authenticated and is an admin
+    if (status === 'authenticated') {
+      const user = session?.user as any;
+      if (user?.role !== 'admin') {
+        // Redirect non-admin users
+        router.push('/');
+        return;
+      }
+      fetchOrders();
+    } else if (status === 'unauthenticated') {
+      // Redirect unauthenticated users
+      router.push('/sign-in');
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     filterOrders();
@@ -80,6 +100,7 @@ export default function OrdersPage() {
       if (!response.ok) throw new Error('Failed to fetch orders');
   
       const data = await response.json();
+      console.log(data);
   
       // Group by orderId
       const ordersMap: Record<string, Order & { items: OrderItem[] }> = {};
@@ -115,10 +136,13 @@ export default function OrdersPage() {
           productId: row.productId,
           quantity: row.quantity,
           price: row.itemPrice,
+          phoneType: row.phoneType,
+          imageUrls: row.imageUrls ? JSON.parse(row.imageUrls) : undefined,
           product: {
             id: row.productId,
             name: row.productName,
             images: row.images,
+            cloudinaryImages: row.cloudinaryImages ? JSON.parse(row.cloudinaryImages) : undefined,
           },
         });
       });
@@ -427,6 +451,9 @@ export default function OrdersPage() {
                   Customer
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Adress
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Items
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -444,6 +471,9 @@ export default function OrdersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -458,14 +488,51 @@ export default function OrdersPage() {
                     <div className="text-sm text-gray-500">{order.customerEmail}</div>
                     {order.customerPhone && <div className="text-sm text-gray-500">{order.customerPhone}</div>}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
+                    <div className="text-sm text-gray-500">{order.customerEmail}</div>
+                    {order.customerPhone && <div className="text-sm text-gray-500">{order.shippingAddress}</div>}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                     </div>
                     <div className="text-sm text-gray-500">
                       {order.items.map(item => (
-                        <div key={item.id}>
-                          {item.product.name} - ₹{item.price} x {item.quantity}
+                        <div key={item.id} className="mb-2">
+                          <div>{item.product.name} - ₹{item.price} x {item.quantity}</div>
+                          
+                          
+                          
+                          {/* Display phone type if available */}
+                          {item.phoneType && (
+                            <div className="text-xs font-medium text-blue-600 mt-1 bg-blue-50 p-2 rounded-md inline-block">
+                              📱 Phone Model: {item.phoneType}
+                            </div>
+                          )}
+                          
+                          {/* Display custom uploaded images if available */}
+                          {item.imageUrls && item.imageUrls.length > 0 && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-purple-600 mb-1">
+                                📸 Polaroid Images ({item.imageUrls.length})
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {item.imageUrls.map((url, idx) => (
+                                  <div key={idx} className="relative group">
+                                    <Image 
+                                      src={url} 
+                                      alt={`Custom upload ${idx + 1}`} 
+                                      className="h-10 w-10 object-cover rounded-md border border-gray-200"
+                                    />
+                                    <span className="absolute -top-1 -right-1 bg-white text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center border border-gray-200">
+                                      {idx + 1}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

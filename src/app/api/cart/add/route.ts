@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-
+      console.log(session);
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },

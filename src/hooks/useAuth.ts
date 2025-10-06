@@ -23,13 +23,18 @@ export const useAuth = () => {
   // Google login
   const loginWithGoogle = async () => {
     try {
-      await signIn("google", { callbackUrl: "/dashboard" }); // redirect after login
+      const res = await signIn("google", { redirect: false, callbackUrl: "/dashboard" });
+      console.log("Google login result:", res); // now you'll see this
+      if (res?.url) {
+        // manually redirect after successful login
+        window.location.href = res.url;
+      }
     } catch (error) {
       console.error("Google login error:", error);
-      throw error;
     }
   };
-
+  
+  
   // Logout
   const logout = async () => {
     await signOut({ callbackUrl: "/" });

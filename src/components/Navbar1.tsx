@@ -12,6 +12,7 @@ import AuthModal from './AuthModal';
 import { FiMenu, FiX } from 'react-icons/fi';
 
 function Navbar1() {
+  const{TotalItems}=useCart();
   const { data: session, status } = useSession();
   const router = useRouter();
   const { totalItems } = useCart();
@@ -186,11 +187,11 @@ function Navbar1() {
                   className="text-white hover:text-[#D6B45C] transition-all duration-300 hover:scale-110 relative"
                 >
                   <IoCartSharp />
-                  {displayCartCount > 0 && (
+                 
                     <span className="absolute -top-2 -right-2 bg-[#D6B45C] text-[#0A1D44] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                      {displayCartCount}
+                      {totalItems}
                     </span>
-                  )}
+             
                 </button>
               </div>
             </div>

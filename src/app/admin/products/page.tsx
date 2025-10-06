@@ -6,11 +6,15 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  Filter,
+
   Package,
-  Eye
+
+  Upload,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { uploadMultipleToCloudinary } from '@/lib/cloudinary';
+import Image from 'next/image';
 
 interface Product {
   id: string;
@@ -24,6 +28,9 @@ interface Product {
   featured: boolean;
   slug: string;
   images: string;
+  cloudinaryImages: string[];
+  allowsCustomization: boolean;
+  customizationType: string | null;
   createdAt: string;
   category: {
     name: string;
@@ -45,6 +52,9 @@ interface ProductFormData {
   tags: string;
   featured: boolean;
   images: string;
+  cloudinaryImages: string[];
+  allowsCustomization: boolean;
+  customizationType: string;
 }
 
 export default function ProductsPage() {
@@ -64,7 +74,10 @@ export default function ProductsPage() {
     description: '',
     tags: '',
     featured: false,
-    images: ''
+    images: '',
+    cloudinaryImages: [],
+    allowsCustomization: false,
+    customizationType: ''
   });
 
   useEffect(() => {
@@ -142,7 +155,10 @@ export default function ProductsPage() {
       description: product.description,
       tags: product.tags,
       featured: product.featured,
-      images: product.images
+      images: product.images,
+      cloudinaryImages: product.cloudinaryImages || [],
+      allowsCustomization: product.allowsCustomization || false,
+      customizationType: product.customizationType || ''
     });
     setShowModal(true);
   };
@@ -179,7 +195,10 @@ export default function ProductsPage() {
       description: '',
       tags: '',
       featured: false,
-      images: ''
+      images: '',
+      cloudinaryImages: [],
+      allowsCustomization: false,
+      customizationType: ''
     });
   };
 
@@ -253,7 +272,7 @@ export default function ProductsPage() {
           <div key={product.id} className="bg-white rounded-lg shadow overflow-hidden">
             <div className="aspect-square bg-gray-200 flex items-center justify-center">
               {product.images ? (
-                <img 
+                <Image 
                   src={product.images.split(',')[0]} 
                   alt={product.name}
                   className="w-full h-full object-cover"
@@ -451,6 +470,101 @@ export default function ProductsPage() {
                 </p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cloudinary Images
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {formData.cloudinaryImages.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <Image  
+                        src={url} 
+                        alt={`Product image ${index + 1}`} 
+                        className="w-20 h-20 object-cover rounded-md border border-gray-300" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newImages = [...formData.cloudinaryImages];
+                          newImages.splice(index, 1);
+                          setFormData({...formData, cloudinaryImages: newImages});
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    id="cloudinaryUpload"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        try {
+                          const files = Array.from(e.target.files);
+                          const urls = await uploadMultipleToCloudinary(files);
+                          setFormData({
+                            ...formData, 
+                            cloudinaryImages: [...formData.cloudinaryImages, ...urls]
+                          });
+                        } catch (error) {
+                          console.error('Upload error:', error);
+                          alert('Failed to upload images. Please try again.');
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('cloudinaryUpload')?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload size={16} />
+                    Upload Images
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id="allowsCustomization"
+                      checked={formData.allowsCustomization}
+                      onChange={(e) => setFormData({...formData, allowsCustomization: e.target.checked})}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="allowsCustomization" className="ml-2 text-sm text-gray-700">
+                      Allow Product Customization
+                    </label>
+                  </div>
+                </div>
+
+                {formData.allowsCustomization && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Customization Type
+                    </label>
+                    <select
+                      value={formData.customizationType}
+                      onChange={(e) => setFormData({...formData, customizationType: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select Type</option>
+                      <option value="polaroid">Polaroid</option>
+                      <option value="phoneCase">Phone Case</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -486,4 +600,4 @@ export default function ProductsPage() {
       )}
     </div>
   );
-} 
+}

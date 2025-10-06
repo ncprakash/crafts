@@ -45,6 +45,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
     domains: [
       'encrypted-tbn3.gstatic.com',
@@ -54,7 +60,25 @@ const nextConfig: NextConfig = {
       'lh3.googleusercontent.com',
       'images.unsplash.com',
       'via.placeholder.com',
+      'res.cloudinary.com',
     ],
+  },
+  webpack: (config, { isServer }) => {
+    // Optimize webpack performance
+    config.optimization = {
+      ...config.optimization,
+      moduleIds: 'deterministic',
+    };
+
+    // Limit memory usage
+    config.performance = {
+      ...config.performance,
+      hints: false,
+      maxEntrypointSize: 512000,
+      maxAssetSize: 512000,
+    };
+
+    return config;
   },
   experimental: {
     optimizePackageImports: ['lucide-react'],

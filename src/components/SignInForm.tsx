@@ -18,7 +18,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const FormSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email'),
@@ -30,6 +30,7 @@ const SignInForm = () => {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -39,10 +40,14 @@ const SignInForm = () => {
     },
   });
 
+  // Handle mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Redirect if already signed in
   useEffect(() => {
     if (session) {
-      // Check if user is admin and redirect accordingly
       if (session.user.role === 'admin') {
         router.push('/admin');
       } else {
@@ -67,8 +72,6 @@ const SignInForm = () => {
         setIsLoading(false);
       } else if (result?.ok) {
         toast.success('Signed in successfully!');
-        // Keep loading state true while redirecting
-        // The redirect will be handled by useEffect when session is updated
       }
     } catch (error) {
       console.error(error);
@@ -88,6 +91,11 @@ const SignInForm = () => {
     }
   };
 
+  // Show loading state during mount
+  if (!isMounted) {
+    return null;
+  }
+
   // Don't render if already signed in
   if (session) {
     return (
@@ -101,18 +109,18 @@ const SignInForm = () => {
   return (
     <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
       <Link href="/" className="absolute top-4 left-4 flex items-center text-gray-600 hover:text-gray-800">
-    <svg
-      className="w-5 h-5 mr-1"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-    <span className="text-sm">Back</span>
-  </Link>
+        <svg
+          className="w-5 h-5 mr-1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span className="text-sm">Back</span>
+      </Link>
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Sign In</h2>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -123,7 +131,12 @@ const SignInForm = () => {
               <FormItem>
                 <FormLabel className="text-gray-700">Email</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="mail@example.com" disabled={isLoading} />
+                  <Input 
+                    {...field} 
+                    placeholder="mail@example.com" 
+                    disabled={isLoading}
+                    suppressHydrationWarning
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -143,12 +156,14 @@ const SignInForm = () => {
                       type={showPassword ? 'text' : 'password'} 
                       placeholder="Enter password"
                       disabled={isLoading}
+                      suppressHydrationWarning
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                       disabled={isLoading}
+                      suppressHydrationWarning
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -176,6 +191,7 @@ const SignInForm = () => {
             type="submit" 
             className="w-full bg-blue-600 text-white hover:bg-blue-700"
             disabled={isLoading}
+            suppressHydrationWarning
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -204,12 +220,12 @@ const SignInForm = () => {
         onClick={handleGoogleSignIn}
         disabled={isLoading}
         className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+        suppressHydrationWarning
       >
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin text-gray-700" />
         ) : (
           <>
-            {/* Google Icon */}
             <svg 
               className="w-5 h-5" 
               viewBox="0 0 24 24" 
