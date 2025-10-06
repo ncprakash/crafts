@@ -271,15 +271,17 @@ export default function ProductsPage() {
         {filteredProducts.map((product) => (
           <div key={product.id} className="bg-white rounded-lg shadow overflow-hidden">
             <div className="aspect-square bg-gray-200 flex items-center justify-center">
-              {product.images ? (
-                <Image 
-                  src={product.images.split(',')[0]} 
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Package className="w-12 h-12 text-gray-400" />
-              )}
+            {product.cloudinaryImages && product.cloudinaryImages.length > 0 ? (
+  <Image
+    src={product.cloudinaryImages[0]}
+    alt={product.name}
+    width={300}  // bigger width
+    height={200} // bigger height
+    className="object-cover rounded-md"
+  />
+) : (
+  <Package className="w-12 h-12 text-gray-400" />
+)}
             </div>
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
@@ -454,25 +456,11 @@ export default function ProductsPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image URLs
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                  value={formData.images}
-                  onChange={(e) => setFormData({...formData, images: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Separate multiple image URLs with commas
-                </p>
-              </div>
+           
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cloudinary Images
+                   Images
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.cloudinaryImages.map((url, index) => (
@@ -480,6 +468,8 @@ export default function ProductsPage() {
                       <Image  
                         src={url} 
                         alt={`Product image ${index + 1}`} 
+                        width={80}  // 20 * 4 (Tailwind's w-20 = 5rem = 80px)
+                        height={80} // 20 * 4
                         className="w-20 h-20 object-cover rounded-md border border-gray-300" 
                       />
                       <button

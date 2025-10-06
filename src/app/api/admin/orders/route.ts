@@ -5,10 +5,8 @@ import { db } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Check if user is admin
     const user = await db.user.findUnique({
@@ -42,11 +40,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ orders });
 
   } catch (error) {
-    console.error('Admin orders fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch orders' },
-      { status: 500 }
-    );
+    console.error('Admin orders fetch full error:', error);
+  return NextResponse.json(
+    { error: (error as Error).message },
+    { status: 500 }
+  )
   }
 }
 

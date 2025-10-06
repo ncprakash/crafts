@@ -48,9 +48,9 @@ model Product {
   featured    Boolean     @default(false)
   slug        String      @unique
   images      String
-  cloudinaryImages String[] // Array of Cloudinary image URLs
-  allowsCustomization Boolean @default(false) // Whether product allows custom uploads (e.g. Polaroid)
-  customizationType String? // Type of customization (e.g. "polaroid", "phoneCase")
+  cloudinaryImages     String[]  @default([])    // <--- Add this
+  allowsCustomization  Boolean   @default(false) // <--- Add this
+  customizationType    String?                   // <--- Add this // Type of customization (e.g. "polaroid", "phoneCase")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]

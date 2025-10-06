@@ -11,7 +11,7 @@ interface Product {
   price: number;
   discount: number;
   stock: number;
-  images: string;
+  cloudinaryImages: string;
   featured: boolean;
   createdAt: string;
   category: {
@@ -206,7 +206,7 @@ export default function HandmadeCollections() {
 
               <div className="flex justify-center mb-4">
                 <Image
-                  src={product.images ? product.images.split(',')[0] : '/logo.svg'}
+                  src={product.cloudinaryImages ? product.cloudinaryImages[0] : '/logo.svg'}
                   alt={product.name}
                   className="w-24 h-24 object-contain"
                   width={96}

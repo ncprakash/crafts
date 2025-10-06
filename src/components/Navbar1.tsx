@@ -12,7 +12,7 @@ import AuthModal from './AuthModal';
 import { FiMenu, FiX } from 'react-icons/fi';
 
 function Navbar1() {
-  const{TotalItems}=useCart();
+
   const { data: session, status } = useSession();
   const router = useRouter();
   const { totalItems } = useCart();

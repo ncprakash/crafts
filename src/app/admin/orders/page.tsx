@@ -80,7 +80,7 @@ export default function OrdersPage() {
         router.push('/');
         return;
       }
-      fetchOrders();
+      fetchOrders()
     } else if (status === 'unauthenticated') {
       // Redirect unauthenticated users
       router.push('/sign-in');
@@ -96,7 +96,7 @@ export default function OrdersPage() {
       setLoading(true);
       setError(null);
   
-      const response = await fetch('/api/orders');
+      const response = await fetch(`/api/orders?userId=${session?.user?.id}`);
       if (!response.ok) throw new Error('Failed to fetch orders');
   
       const data = await response.json();
@@ -316,7 +316,8 @@ export default function OrdersPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={fetchOrders}>Retry</Button>
+          <button onClick={() => fetchOrders()}>Fetch Orders</button>
+
         </div>
       </div>
     );
@@ -451,7 +452,7 @@ export default function OrdersPage() {
                   Customer
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Adress
+                Address
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Items
@@ -471,9 +472,7 @@ export default function OrdersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+               
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// ✅ DO NOT TYPE the second argument at all (NO destructuring or custom type)
-export async function GET(req: NextRequest, context: any) {
-  const id = await context.params.id;
-
+export async function GET(
+  req: NextRequest,
+  context:any 
+) {
   try {
+    const { id } = context.params;
+
     const product = await db.product.findUnique({
       where: { id },
-      include: {
-        category: { select: { name: true } },
-      },
+      include: { category: true },
     });
 
     if (!product) {
@@ -19,12 +19,16 @@ export async function GET(req: NextRequest, context: any) {
 
     return NextResponse.json(product);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
+    console.error('Error fetching product:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function PUT(req: NextRequest, context: any) {
-  const id = context.params.id;
+export async function PUT(
+  req: NextRequest,
+  context: any 
+) {
+  const { id } = context.params;
 
   try {
     const body = await req.json();
@@ -38,6 +42,9 @@ export async function PUT(req: NextRequest, context: any) {
       tags,
       featured,
       images,
+      cloudinaryImages = [],
+      allowsCustomization = false,
+      customizationType = '',
     } = body;
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -55,25 +62,31 @@ export async function PUT(req: NextRequest, context: any) {
         featured: featured || false,
         slug,
         images,
+        cloudinaryImages,
+        allowsCustomization,
+        customizationType,
       },
+      include: { category: true },
     });
 
     return NextResponse.json(product);
   } catch (error) {
+    console.error('Error updating product:', error);
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, context: any) {
-  const id = context.params.id;
+export async function DELETE(
+  req: NextRequest,
+  context: any 
+) {
+  const { id } = context.params;
 
   try {
-    await db.product.delete({
-      where: { id },
-    });
-
+    await db.product.delete({ where: { id } });
     return NextResponse.json({ message: 'Product deleted successfully' });
   } catch (error) {
+    console.error('Error deleting product:', error);
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
 }
