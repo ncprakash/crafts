@@ -3,6 +3,8 @@ import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/lib/cart-context';
 import Toast from '@/components/Toast';
+import Link from 'next/link';
+import { Eye } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -83,49 +85,6 @@ export default function HandmadeCollections() {
     }
   });
 
-  const handleAddToCart = async (product: Product) => {
-    try {
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Add to local cart state
-        addToCart(product);
-        
-        // Show success toast
-        setToast({
-          show: true,
-          message: `${product.name} added to cart!`,
-          type: 'success'
-        });
-      } else {
-        // Show error toast
-        setToast({
-          show: true,
-          message: data.error || 'Failed to add to cart',
-          type: 'error'
-        });
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      setToast({
-        show: true,
-        message: 'Failed to add to cart',
-        type: 'error'
-      });
-    }
-  };
-
   if (loading) {
     return (
       <section className="bg-[#0A1D44]/90 text-white py-16">
@@ -199,7 +158,6 @@ export default function HandmadeCollections() {
             <div
               key={product.id}
               className="bg-white text-[#0A1D44] rounded-xl p-4 shadow-md hover:shadow-xl transition duration-300 relative group cursor-pointer"
-              onClick={() => window.location.href = `/view?id=${product.id}`}
             >
               {/* Hover Border Effect */}
               <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-[#0A1D44] transition-all duration-300 pointer-events-none"></div>
@@ -225,17 +183,18 @@ export default function HandmadeCollections() {
                       {Number(product.discount)}% off
                     </p>
                   )}
+                  <p className={`text-xs ${Number(product.stock) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {Number(product.stock) > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                  </p>
                 </div>
-                <button 
-                  className="text-sm bg-[#f4c057] px-4 py-1 rounded-full font-semibold text-[#0A1D44] shadow-md hover:bg-[#f1b532] transition z-10" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddToCart(product);
-                  }}
-                  disabled={Number(product.stock) === 0}
+                <Link
+                  href={`/view?id=${product.id}`}
+                  className="bg-[#0A1D44] text-white px-4 py-2 rounded-full font-semibold shadow-md transition hover:bg-[#1e3a8a] flex items-center gap-2 text-sm"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {Number(product.stock) === 0 ? 'Out of Stock' : 'add to cart'}
-                </button>
+                  <Eye className="w-4 h-4" />
+                  View Product
+                </Link>
               </div>
             </div>
           ))}

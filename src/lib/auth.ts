@@ -1,18 +1,19 @@
 // src/lib/auth.ts
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { db } from "@/lib/db";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcrypt";
-
+import { db } from "@/lib/db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [GoogleProvider({
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  }),
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -25,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { email: credentials.email },
           });
 
-          // If user does not exist, optionally create a new one (with required fields)
+          // Create a new user if not found
           if (!user) {
             const hashedPassword = await bcrypt.hash(credentials.password, 10);
             user = await db.user.create({
@@ -34,17 +35,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 username: credentials.email.split("@")[0],
                 password: hashedPassword,
                 role: "user",
-                isVerified: true, // set true for credentials signup, change logic if email verification needed
-                phone_num: "", // provide default to satisfy Prisma schema
+                isVerified: true,
+                phone_num: "", // default required by your schema
               },
             });
           }
 
-          // Check password
+          // Verify password
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
           if (!isPasswordValid) return null;
 
-          // Check if verified
           if (!user.isVerified) throw new Error("Please verify your email before signing in");
 
           return {
@@ -63,11 +63,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
+    // ✅ Create Google user if not in DB
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        const existingUser = await db.user.findUnique({
+          where: { email: user.email! },
+        });
+    
+        if (!existingUser) {
+          await db.user.create({
+            data: {
+              email: user.email!,
+              username:
+                user.name?.toLowerCase().replace(/\s+/g, "_") ||
+                `user_${Date.now()}`,
+              password: "", // Google users don’t need password
+              phone_num: `google_${Date.now()}`, // temporary unique placeholder
+              isVerified: true,
+              role: "user",
+            },
+          });
+        }
+      }
+    
+      return true;
+    },
+
     async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
-        token.username = user.username;
-        token.role = user.role;
+        token.username = user.username || user.name;
+        token.role = user.role || "user";
       }
       return token;
     },
