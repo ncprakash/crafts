@@ -272,9 +272,11 @@ export default function CategoriesPage() {
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                   {category.image ? (
                     category.image.startsWith('data:') ? (
-                      <img 
+                      <Image 
                         src={category.image} 
                         alt={category.name}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-cover rounded-lg"
                       />
                     ) : (

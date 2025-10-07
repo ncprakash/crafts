@@ -178,9 +178,11 @@ export default function ImageUpload({
             <div key={index} className="relative group">
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                 {imageUrl.startsWith('data:') ? (
-                  <img
+                  <Image
                     src={imageUrl}
                     alt={`Uploaded image ${index + 1}`}
+                    width={200}
+                    height={200}
                     className="w-full h-full object-cover"
                   />
                 ) : (

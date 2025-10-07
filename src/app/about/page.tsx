@@ -122,7 +122,7 @@ export default function AboutPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { number: "100+", label: "Happy Customers", icon: Users },
+                { number: "250+", label: "Happy Customers", icon: Users },
                 { number: "50+", label: "Products Created", icon: Award },
                 { number: "50+", label: "Cities Served", icon: Target },
                 { number: "100%", label: "Handmade", icon: Heart }

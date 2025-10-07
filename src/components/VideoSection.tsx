@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const VideoSection = () => {
   const videos = [
@@ -100,9 +101,11 @@ const VideoSection = () => {
               {/* Video Container */}
               <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden shadow-2xl">
   {/* Thumbnail Image */}
-  <img
+  <Image
     src={currentVideo.thumbnail}
     alt={currentVideo.title}
+    width={40}
+    height={40}
     className="absolute inset-0 w-full h-full object-cover"
   />
 

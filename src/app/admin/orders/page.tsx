@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import AdminOrderItem from '@/components/AdminImagesOrPhone';
 
 interface OrderItem {
   id: string;
@@ -472,6 +473,9 @@ export default function OrdersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  orderItems
+                </th>
                
               </tr>
             </thead>
@@ -581,6 +585,9 @@ export default function OrdersPage() {
                         <Eye className="w-4 h-4" />
                       </Button>
                     </div>
+                  </td>
+                  <td>
+                  <AdminOrderItem orderItemId={order.id}/>
                   </td>
                 </tr>
               ))}

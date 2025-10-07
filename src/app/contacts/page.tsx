@@ -178,16 +178,16 @@ export default function ContactPage() {
                   <Phone className="w-6 h-6 text-white" />
                 </div>
                 <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-semibold text-[#0A1D44]">+91 98765 43210</p>
+                <p className="font-semibold text-[#0A1D44]">+917899251692</p>
               </div>
 
               <div className="flex flex-col items-center space-y-2">
                
-                <Link href={"https://www.instagram.com/_niru_gunnal/"}><div className="w-12 h-12 bg-gradient-to-br from-[#FDC93B] to-[#e4b230] rounded-full flex items-center justify-center">
+                <Link href={"https://www.instagram.com/gunnal.creations?igsh=ZjY5MTl2bnc0NTBt&utm_source=qr"}><div className="w-12 h-12 bg-gradient-to-br from-[#FDC93B] to-[#e4b230] rounded-full flex items-center justify-center">
                   <Instagram className="w-6 h-6 text-white" />
                 </div></Link>
                 <p className="text-sm text-gray-600">Instagram</p>
-                <p className="font-semibold text-[#0A1D44]">@gunnalcreations</p>
+               <p className="font-semibold text-[#0A1D44]">@gunnalcreations</p>
               </div>
             </div>
           </motion.div>

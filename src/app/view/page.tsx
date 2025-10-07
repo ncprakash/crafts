@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Star, Heart, ShoppingCart, ArrowLeft, Share2, MessageCircle, Package, Truck, Shield } from 'lucide-react';
 import Link from 'next/link';
 import Toast from '@/components/Toast';
-import ProductCustomizer, { CustomizationData } from '@/components/ProductCustomizer';
+
 import ProductGallery from '@/components/viewImage';
 
 interface Product {
@@ -35,8 +35,7 @@ interface Testimonial {
 }
 
 function ViewPageContent() {
-  const [customizationData, setCustomizationData] = useState<CustomizationData | null>(null);
-  const [showCustomizer, setShowCustomizer] = useState(false);
+
   const searchParams = useSearchParams();
   const productId = searchParams.get('id');
   const [product, setProduct] = useState<Product | null>(null);
@@ -85,7 +84,7 @@ function ViewPageContent() {
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id, quantity, customization: customizationData })
+        body: JSON.stringify({ productId: product.id, quantity })
       });
       const data = await response.json();
       if (response.ok) {
@@ -220,79 +219,58 @@ function ViewPageContent() {
 
   {/* Customization Section */}
  
-  {(product.category.name.toLowerCase().includes('polaroids') ||
-      product.category.name.toLowerCase().includes('phone case')) && (
-      <div className="mb-10 mt-6">
-        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 hover:shadow-md transition-all duration-300">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">
-            Personalize Your{' '}
-            {product.category.name.toLowerCase().includes('polaroid')
-              ? 'Polaroid'
-              : 'Phone Case'}
-          </h3>
-          <p className="text-sm text-gray-500 mb-5">
-            Upload your images or choose customization options to make it uniquely yours.
-          </p>
-
-          <div className="bg-[#faf9f7] rounded-xl p-4 border border-gray-100">
-            <ProductCustomizer
-              productType={
-                product.category.name.toLowerCase().includes('polaroid')
-                  ? 'polaroid'
-                  : 'phoneCase'
-              }
-              onCustomizationComplete={(data) => {
-                setCustomizationData(data);
-                setShowCustomizer(false);
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    )}
+ 
     <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="bg-white rounded-2xl p-8 shadow-xl"
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-[#0A1D44]">Quantity:</label>
-                <div className="flex items-center border border-gray-300 rounded-lg">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-2 hover:bg-gray-100 transition-colors"
-                    disabled={quantity <= 1}
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-2 border-x border-gray-300">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(Math.min(Number(product.stock), quantity + 1))}
-                    className="px-3 py-2 hover:bg-gray-100 transition-colors"
-                    disabled={quantity >= Number(product.stock)}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Total Price:</p>
-                <p className="text-2xl font-bold text-[#0A1D44]">₹{(discountedPrice * quantity).toFixed(2)}</p>
-              </div>
-            </div>
-            
-            <button
-              onClick={handleAddToCart}
-              disabled={Number(product.stock) === 0}
-              className="bg-[#FDC93B] hover:bg-[#e4b230] text-[#0A1D44] font-bold py-4 px-8 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px] justify-center"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {Number(product.stock) === 0 ? 'Out of Stock' : 'Add to Cart'}
-            </button>
-          </div>
+         <div className="flex flex-col md:flex-row items-center justify-between gap-6 border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
+  {/* Left section: Quantity + Price */}
+  <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto">
+    {/* Quantity selector */}
+    <div className="flex items-center gap-4">
+      <label className="text-sm font-medium text-[#0A1D44]">Quantity:</label>
+      <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+        <button
+          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+          className="px-3 py-2 hover:bg-gray-100 transition-colors"
+          disabled={quantity <= 1}
+        >
+          -
+        </button>
+        <span className="px-4 py-2 border-x border-gray-300">{quantity}</span>
+        <button
+          onClick={() => setQuantity(Math.min(Number(product.stock), quantity + 1))}
+          className="px-3 py-2 hover:bg-gray-100 transition-colors"
+          disabled={quantity >= Number(product.stock)}
+        >
+          +
+        </button>
+      </div>
+    </div>
+
+    {/* Total price */}
+    <div className="text-center md:text-right">
+      <p className="text-sm text-gray-600">Total Price:</p>
+      <p className="text-2xl font-bold text-[#0A1D44]">
+        ₹{(discountedPrice * quantity).toFixed(2)}
+      </p>
+    </div>
+  </div>
+
+  {/* Add to Cart button */}
+  <button
+    onClick={handleAddToCart}
+    disabled={Number(product.stock) === 0}
+    className="bg-[#FDC93B] hover:bg-[#e4b230] text-[#0A1D44] font-bold py-3 px-8 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+  >
+    <ShoppingCart className="w-5 h-5" />
+    {Number(product.stock) === 0 ? "Out of Stock" : "Add to Cart"}
+  </button>
+</div>
+
         </motion.div>
 </motion.div>
 

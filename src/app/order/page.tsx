@@ -1,20 +1,58 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useCart } from '@/lib/cart-context';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import ProductCustomizer from '@/components/ProductCustomizer';
+import ProductCustomizer from "@/components/ProductCustomizer";
+
+
+interface FormData {
+  first: string;
+  last: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  zip: string;
+  state: string;
+  country: string;
+  coupon: string;
+}
+interface ProductCustomizerProps {
+  productType: "polaroid" | "phoneCase";
+  itemId: string; // REQUIRED
+  onCustomizationComplete: (data: CustomizationData) => void;
+}
+
+
+interface CartItem {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    category?: {
+      name: string;
+    };
+  };
+  quantity: number;
+  price: number;
+}
+export interface CustomizationData {
+  uploadedImages?: string[];
+  phoneType?: string;
+}
+
 
 export default function CheckoutPage() {
+  const [customizationData, setCustomizationData] = useState<CustomizationData | null>(null);
+  const [showCustomizer, setShowCustomizer] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState(0);
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -32,8 +70,13 @@ export default function CheckoutPage() {
 
   // Razorpay payment function
   const handleRazorpayPayment = async (orderResult: any) => {
+    if (!(window as any).Razorpay) {
+      setError('Razorpay payment gateway not loaded. Please try again.');
+      return;
+    }
+
     const options = {
-      key: 'rzp_live_RN4opVXKWAkvwp',
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_RN4opVXKWAkvwp',
       amount: orderResult.razorpayOrder.amount,
       currency: orderResult.razorpayOrder.currency,
       name: 'Gunnal Crafts',
@@ -60,22 +103,11 @@ export default function CheckoutPage() {
             // Clear cart and show success
             await clearServerCart();
             setOrderSuccess(true);
-            setFormData({
-              first: '', last: '', email: '', phone: '', address: '',
-              city: '', zip: '', state: '', country: '', coupon: ''
-            });
+            resetFormData();
             setError('');
             
             // Start countdown
-            const countdownInterval = setInterval(() => {
-              setCountdown((prev) => {
-                if (prev <= 1) {
-                  clearInterval(countdownInterval);
-                  return 0;
-                }
-                return prev - 1;
-              });
-            }, 1000);
+            startCountdown();
           } else {
             setError('Payment verification failed. Please contact support.');
           }
@@ -99,9 +131,30 @@ export default function CheckoutPage() {
 
     const razorpay = new (window as any).Razorpay(options);
     razorpay.on('payment.failed', function (response: any) {
-      setError('Payment failed. Please try again.');
+      setError(`Payment failed: ${response.error.description}. Please try again.`);
     });
     razorpay.open();
+  };
+
+  // Start countdown for redirect
+  const startCountdown = () => {
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Reset form data
+  const resetFormData = () => {
+    setFormData({
+      first: '', last: '', email: '', phone: '', address: '',
+      city: '', zip: '', state: '', country: '', coupon: ''
+    });
   };
 
   // Fetch server-side cart items
@@ -116,19 +169,17 @@ export default function CheckoutPage() {
   const fetchCartItems = async () => {
     try {
       const response = await fetch('/api/cart/items');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setCartItems(data.items);
-        setTotal(data.total);
-        setItemCount(data.itemCount);
-        console.log('Server cart items:', data.items);
-        console.log('Server cart total:', data.total);
-      } else {
-        console.error('Error fetching cart:', data.error);
+      if (!response.ok) {
+        throw new Error('Failed to fetch cart items');
       }
+      
+      const data = await response.json();
+      setCartItems(data.items || []);
+      setTotal(data.total || 0);
+      setItemCount(data.itemCount || 0);
     } catch (error) {
       console.error('Error fetching cart items:', error);
+      setError('Failed to load cart items. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -148,7 +199,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     first: '', last: '', email: '', phone: '', address: '',
     city: '', zip: '', state: '', country: '', coupon: ''
   });
@@ -187,10 +238,37 @@ export default function CheckoutPage() {
         validatedValue = value;
     }
     
-    setFormData({ ...formData, [name]: validatedValue });
+    setFormData(prev => ({ ...prev, [name]: validatedValue }));
   };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    // Form validation
+    const requiredFields = ['first', 'last', 'email', 'phone', 'address', 'city', 'zip', 'state', 'country'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof FormData]?.trim());
+    
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      return false;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    // Phone validation (at least 10 digits)
+    const phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      setError('Please enter a valid phone number (at least 10 digits)');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!session?.user?.id) {
@@ -203,26 +281,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Form validation
-    const requiredFields = ['first', 'last', 'email', 'phone', 'address', 'city', 'zip', 'state', 'country'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]?.trim());
-    
-    if (missingFields.length > 0) {
-      setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    // Phone validation (at least 10 digits)
-    const phoneDigits = formData.phone.replace(/\D/g, '');
-    if (phoneDigits.length < 10) {
-      setError('Please enter a valid phone number (at least 10 digits)');
+    // Validate form
+    if (!validateForm()) {
       return;
     }
 
@@ -241,7 +301,8 @@ export default function CheckoutPage() {
         state: formData.state,
         country: formData.country,
         cartItems: cartItems,
-        total: total
+        total: total,
+        customizationData: customizationData
       };
 
       const orderResponse = await fetch('/api/orders', {
@@ -253,7 +314,6 @@ export default function CheckoutPage() {
       });
 
       const orderResult = await orderResponse.json();
-      console.log('Order creation response:', orderResult);
 
       if (!orderResponse.ok) {
         console.error('Order creation failed:', orderResult);
@@ -282,24 +342,10 @@ export default function CheckoutPage() {
 
           // Clear cart and show success
           await clearServerCart();
-          
           setOrderSuccess(true);
-          setFormData({
-            first: '', last: '', email: '', phone: '', address: '',
-            city: '', zip: '', state: '', country: '', coupon: ''
-          });
+          resetFormData();
           setError('');
-          
-          // Start countdown
-          const countdownInterval = setInterval(() => {
-            setCountdown((prev) => {
-              if (prev <= 1) {
-                clearInterval(countdownInterval);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
+          startCountdown();
         } catch (error) {
           console.error('Error processing COD order:', error);
           setError('Failed to process COD order');
@@ -322,7 +368,6 @@ export default function CheckoutPage() {
   }, [orderSuccess, countdown, router]);
 
   // Redirect if not signed in
-
   if (!session) {
     return (
       <div className="min-h-screen bg-[#f9f5f0] px-4 py-8 md:py-12 flex justify-center">
@@ -348,10 +393,12 @@ export default function CheckoutPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
-                            <h2 className="text-2xl font-bold text-[#0A1D44] mb-2">🎉 Order Placed Successfully!</h2>
-                <p className="text-gray-600 mb-4">
-                  Your order has been placed successfully. Please keep the payment ready for cash on delivery.
-                </p>
+            <h2 className="text-2xl font-bold text-[#0A1D44] mb-2">🎉 Order Placed Successfully!</h2>
+            <p className="text-gray-600 mb-4">
+              {paymentMethod === 'cod' 
+                ? 'Your order has been placed successfully. Please keep the payment ready for cash on delivery.'
+                : 'Your order has been placed successfully. You will receive a confirmation email shortly.'}
+            </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-blue-700">
                 ✅ Your cart has been cleared and items have been added to your order.
@@ -371,7 +418,6 @@ export default function CheckoutPage() {
           
           <div className="text-sm text-gray-500">
             <p>Redirecting to dashboard in {countdown} seconds...</p>
-            
             <p className="mt-2">
               <strong>Need help?</strong> Contact to gunnalcreation@gmail.com
             </p>
@@ -409,41 +455,44 @@ export default function CheckoutPage() {
   }
 
   return (
-    <section className="min-h-screen relative flex justify-center items-center">
-              {/* Background image */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0A1D44] via-[#1e3a8a] to-[#3730a3]">
-          {/* Elegant pattern overlay */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-0 w-full h-full" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              backgroundSize: '60px 60px'
-            }}></div>
-          </div>
-          
-          {/* Animated accent lines */}
-          <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-60 animate-pulse"></div>
-          <div className="absolute bottom-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-40 animate-pulse" style={{animationDelay: '1s'}}></div>
-          
-          {/* Corner accents */}
-          <div className="absolute top-8 right-8 w-16 h-16 border-t-2 border-r-2 border-[#FDC93B] opacity-60"></div>
-          <div className="absolute bottom-8 left-8 w-16 h-16 border-b-2 border-l-2 border-[#FDC93B] opacity-60"></div>
-          
-          {/* Floating elements */}
-          <div className="absolute top-20 left-1/4 w-2 h-2 bg-[#FDC93B] rounded-full animate-ping opacity-75"></div>
-          <div className="absolute top-40 right-1/4 w-1 h-1 bg-white rounded-full animate-ping opacity-50" style={{animationDelay: '2s'}}></div>
-          <div className="absolute bottom-32 left-1/3 w-1.5 h-1.5 bg-[#FDC93B] rounded-full animate-ping opacity-60" style={{animationDelay: '1s'}}></div>
+    <section className="min-h-screen relative flex justify-center items-center py-8">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0A1D44] via-[#1e3a8a] to-[#3730a3]">
+        {/* Elegant pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-full h-full" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px'
+          }}></div>
         </div>
+        
+        {/* Animated accent lines */}
+        <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-60 animate-pulse"></div>
+        <div className="absolute bottom-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-40 animate-pulse" style={{animationDelay: '1s'}}></div>
+        
+        {/* Corner accents */}
+        <div className="absolute top-8 right-8 w-16 h-16 border-t-2 border-r-2 border-[#FDC93B] opacity-60"></div>
+        <div className="absolute bottom-8 left-8 w-16 h-16 border-b-2 border-l-2 border-[#FDC93B] opacity-60"></div>
+        
+        {/* Floating elements */}
+        <div className="absolute top-20 left-1/4 w-2 h-2 bg-[#FDC93B] rounded-full animate-ping opacity-75"></div>
+        <div className="absolute top-40 right-1/4 w-1 h-1 bg-white rounded-full animate-ping opacity-50" style={{animationDelay: '2s'}}></div>
+        <div className="absolute bottom-32 left-1/3 w-1.5 h-1.5 bg-[#FDC93B] rounded-full animate-ping opacity-60" style={{animationDelay: '1s'}}></div>
+      </div>
+
       {/* Main content */}
       <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-6 text-[#0A1D44]">
-
         {/* Header */}
         <div className="flex items-center gap-2 font-semibold text-lg">
-          <Link href={"/cart"}><span className="text-xl">←</span></Link> Checkout
+          <Link href="/cart">
+            <span className="text-xl cursor-pointer">←</span>
+          </Link>
+          Checkout
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">
             {error}
           </div>
         )}
@@ -451,19 +500,16 @@ export default function CheckoutPage() {
         {/* Order Summary */}
         <div className="border-b pb-4">
           <h3 className="font-bold text-sm mb-2">Order Summary</h3>
-          {cartItems.map((item: any) => (
+          {cartItems.map((item) => (
             <div key={item.id} className="flex justify-between text-sm mb-2">
               <div className="flex-1">
                 <p className="font-semibold">{item.product.name}</p>
                 <p className="text-gray-500 text-xs">Quantity: {item.quantity}</p>
               </div>
               <p className="font-bold text-right">{formatCurrency(item.price * item.quantity)}</p>
-          
             </div>
-            
           ))}
         </div>
-        
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Coupon Code */}
@@ -477,161 +523,203 @@ export default function CheckoutPage() {
 
           {/* Form Fields */}
           <div className="space-y-4">
-          <div className="flex gap-2">
+            <div className="flex gap-2">
+              <input
+                name="first"
+                type="text"
+                placeholder="First name *"
+                value={formData.first}
+                onChange={handleChange}
+                maxLength={50}
+                required
+                className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+              />
+              <input
+                name="last"
+                type="text"
+                placeholder="Last name *"
+                value={formData.last}
+                onChange={handleChange}
+                maxLength={50}
+                required
+                className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+              />
+            </div>
             <input
-              name="first"
-              type="text"
-              placeholder="First name"
-              value={formData.first}
+              name="email"
+              type="email"
+              placeholder="Email *"
+              value={formData.email}
               onChange={handleChange}
-              maxLength={50}
+              maxLength={100}
               required
-              className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
+              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
             />
             <input
-              name="last"
+              name="phone"
+              type="tel"
+              placeholder="Phone number *"
+              value={formData.phone}
+              onChange={handleChange}
+              maxLength={15}
+              required
+              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+            />
+            <textarea
+              name="address"
+              placeholder="Shipping address *"
+              rows={3}
+              value={formData.address}
+              onChange={handleChange}
+              maxLength={200}
+              required
+              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+            />
+            <div className="flex gap-2">
+              <input
+                name="city"
+                type="text"
+                placeholder="City *"
+                value={formData.city}
+                onChange={handleChange}
+                maxLength={50}
+                required
+                className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+              />
+              <input
+                name="zip"
+                type="text"
+                placeholder="ZIP code *"
+                value={formData.zip}
+                onChange={handleChange}
+                maxLength={10}
+                required
+                className="w-24 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+              />
+            </div>
+            <input
+              name="state"
               type="text"
-              placeholder="Last name"
-              value={formData.last}
+              placeholder="State *"
+              value={formData.state}
               onChange={handleChange}
               maxLength={50}
               required
-              className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
+              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
+            />
+            <input
+              name="country"
+              type="text"
+              placeholder="Country *"
+              value={formData.country}
+              onChange={handleChange}
+              maxLength={50}
+              required
+              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
             />
           </div>
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            maxLength={100}
-            required
-            className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-          />
-          <input
-            name="phone"
-            type="tel"
-            placeholder="Phone number"
-            value={formData.phone}
-            onChange={handleChange}
-            maxLength={15}
-            required
-            className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-          />
-          <textarea
-            name="address"
-            placeholder="Shipping address"
-            rows={3}
-            value={formData.address}
-            onChange={handleChange}
-            maxLength={200}
-            required
-            className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-          />
-          <div className="flex gap-2">
-            <input
-              name="city"
-              type="text"
-              placeholder="City"
-              value={formData.city}
-              onChange={handleChange}
-              maxLength={50}
-              required
-              className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-            />
-            <input
-              name="zip"
-              type="text"
-              placeholder="ZIP code"
-              value={formData.zip}
-              onChange={handleChange}
-              maxLength={10}
-              required
-              className="w-24 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-            />
-          </div>
-          <input
-            name="state"
-            type="text"
-            placeholder="State"
-            value={formData.state}
-            onChange={handleChange}
-            maxLength={50}
-            required
-            className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-          />
-          <input
-            name="country"
-            type="text"
-            placeholder="Country"
-            value={formData.country}
-            onChange={handleChange}
-            maxLength={50}
-            required
-            className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm"
-          />
-        </div>
 
-        {/* Payment Method Selection */}
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between items-center cursor-pointer">
-            <span className="font-semibold">Delivery Method</span>
-            <span className="text-xl text-gray-500">›</span>
+          {/* Product Customizer */}
+          {cartItems.map((item) => {
+  const name = item.product.name?.toLowerCase() || "";
+  const category = item.product.category?.name?.toLowerCase() || "";
+
+  if (
+    name.includes("polaroid") ||
+    name.includes("poloriod") || // handle typo
+    category.includes("polaroid") ||
+    category.includes("poloriod") ||
+    name.includes("phone") ||
+    category.includes("phone")
+  ) {
+    return (
+      <div key={"customizer-" + item.id} className="mb-6 mt-6">
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 hover:shadow-md transition-all duration-300">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">
+            Personalize Your{" "}
+            {name.includes("phone") || category.includes("phone")
+              ? "Phone Case"
+              : "Polaroid"}
+          </h3>
+          <p className="text-sm text-gray-500 mb-5">
+            Upload your images or choose customization options to make it uniquely yours.
+          </p>
+          <div className="bg-[#faf9f7] rounded-xl p-4 border border-gray-100">
+          <ProductCustomizer
+  itemId={item.id} // ✅ required prop
+  productType={
+    name.includes("phone") || category.includes("phone")
+      ? "phoneCase"
+      : "polaroid"
+  }
+  onCustomizationComplete={(data: CustomizationData) => { // ✅ typed parameter
+    setCustomizationData(data);
+    setShowCustomizer(false);
+  }}
+/>
+
           </div>
-          
-          <div className="space-y-3">
-            <span className="font-semibold">Payment Method</span>
-            <div className="space-y-2">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="razorpay"
-                  checked={paymentMethod === 'razorpay'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-4 h-4 text-[#FDC93B] bg-gray-100 border-gray-300 focus:ring-[#FDC93B] focus:ring-2"
-                />
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
-                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
-                    </svg>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+})}
+
+
+
+          {/* Payment Method Selection */}
+          <div className="space-y-3 text-sm">
+            <div className="space-y-3">
+              <span className="font-semibold">Payment Method *</span>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="razorpay"
+                    checked={paymentMethod === 'razorpay'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-4 h-4 text-[#FDC93B] bg-gray-100 border-gray-300 focus:ring-[#FDC93B] focus:ring-2"
+                  />
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
+                      </svg>
+                    </div>
+                    <span>Online Payment (Credit/Debit Card, UPI, Net Banking)</span>
                   </div>
-                  <span>Online Payment (Credit/Debit Card, UPI, Net Banking)</span>
-                </div>
-              </label>
-              
-            
-        
+                </label>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Summary */}
-        <div className="border-t pt-4 text-sm">
-          <div className="flex justify-between">
-            <p>Subtotal</p>
-            <p>{formatCurrency(total)}</p>
+          {/* Summary */}
+          <div className="border-t pt-4 text-sm">
+            <div className="flex justify-between">
+              <p>Subtotal</p>
+              <p>{formatCurrency(total)}</p>
+            </div>
+            <div className="flex justify-between">
+              <p>Delivery</p>
+              <p className="text-green-600">Free</p>
+            </div>
+            <div className="flex justify-between font-bold text-lg mt-2">
+              <p>Total</p>
+              <p>{formatCurrency(total)}</p>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <p>Delivery</p>
-            <p className="text-green-600">Free</p>
-          </div>
-          <div className="flex justify-between font-bold text-lg mt-2">
-            <p>Total</p>
-            <p>{formatCurrency(total)}</p>
-          </div>
-        </div>
 
-        {/* Order Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-3 bg-[#FDC93B] text-[#0A1D44] font-bold rounded-xl shadow-lg hover:bg-[#e4b230] transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? 'Placing Order...' : 'Place Order'}
-        </button>
+          {/* Order Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 bg-[#FDC93B] text-[#0A1D44] font-bold rounded-xl shadow-lg hover:bg-[#e4b230] transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#D6B45C] focus:ring-offset-2"
+          >
+            {isSubmitting ? 'Placing Order...' : `Place Order - ${formatCurrency(total)}`}
+          </button>
         </form>
       </div>
     </section>

@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
+
 const PolaroidSection = () => {
   const polaroids = [
     {
@@ -10,7 +12,6 @@ const PolaroidSection = () => {
       description: "Capture life's precious moments",
       image: "/mem.jpeg",
       bgColor: "from-amber-100 to-amber-200",
- 
     },
     {
       id: 2,
@@ -18,7 +19,6 @@ const PolaroidSection = () => {
       description: "Celebrate every special second",
       image: "/memories.jpg",
       bgColor: "from-rose-100 to-rose-200",
-
     },
     {
       id: 3,
@@ -26,7 +26,6 @@ const PolaroidSection = () => {
       description: "Share your unique journey",
       image: "/me.jpeg",
       bgColor: "from-blue-100 to-blue-200",
-    
     }
   ];
 
@@ -44,7 +43,7 @@ const PolaroidSection = () => {
     return () => clearInterval(interval);
   }, [polaroids.length, isAutoPlaying]);
 
-  const goToSlide = (index:number) => {
+  const goToSlide = (index: number) => {
     setCurrentIndex(index);
     setIsAutoPlaying(false);
     setTimeout(() => setIsAutoPlaying(true), 5000);
@@ -85,8 +84,6 @@ const PolaroidSection = () => {
           viewport={{ once: true }}
           className="text-center mb-12 md:mb-20"
         >
-       
-          
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-[#0A1D44] mb-4 tracking-tight">
             Find Your
             <span className="block mt-2 bg-gradient-to-r from-[#D6B45C] via-[#f3d78a] to-[#D6B45C] bg-clip-text text-transparent">
@@ -115,7 +112,7 @@ const PolaroidSection = () => {
                 viewport={{ once: true }}
                 whileHover={{ y: -12, scale: 1.03 }}
                 onClick={() => goToSlide(index)}
-          
+         
                 onMouseLeave={() => setHoveredIndex(null)}
                 className={`cursor-pointer transition-all duration-300 ${
                   currentIndex === index ? 'ring-4 ring-[#D6B45C] ring-offset-4' : ''
@@ -125,10 +122,11 @@ const PolaroidSection = () => {
                   
                   {/* Image Container */}
                   <div className="relative w-full h-64 mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                    <img 
+                    <Image  
                       src={polaroid.image}
                       alt={polaroid.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     
                     {/* Overlay on hover */}
@@ -143,16 +141,6 @@ const PolaroidSection = () => {
 
                   {/* Content */}
                   <div className="text-center">
-                    <motion.div
-                      animate={{ 
-                        rotate: currentIndex === index ? [0, 5, -5, 0] : 0,
-                        scale: currentIndex === index ? [1, 1.1, 1] : 1
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="text-4xl mb-3"
-                    >
-                   
-                    </motion.div>
                     <h3 className="text-2xl font-bold text-gray-800 mb-2">
                       {polaroid.title}
                     </h3>
@@ -184,24 +172,15 @@ const PolaroidSection = () => {
                     
                     {/* Image */}
                     <div className="relative w-full h-64 mb-6 rounded-2xl overflow-hidden">
-                      <img 
+                      <Image 
                         src={polaroids[currentIndex].image}
                         alt={polaroids[currentIndex].title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     </div>
 
                     {/* Content */}
-                    <motion.div
-                      animate={{ 
-                        rotate: [0, 10, -10, 0],
-                        scale: [1, 1.15, 1]
-                      }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                      className="text-6xl mb-4 text-center"
-                    >
-                      {polaroids[currentIndex].image}
-                    </motion.div>
                     <h3 className="text-3xl font-bold text-gray-800 mb-3 text-center">
                       {polaroids[currentIndex].title}
                     </h3>
@@ -262,26 +241,27 @@ const PolaroidSection = () => {
           viewport={{ once: true }}
           className="text-center mt-16 md:mt-20"
         >
-         <Link href="/shop"> <motion.button 
-            whileHover={{ 
-              scale: 1.05,
-              boxShadow: "0 20px 40px -12px rgba(214, 180, 92, 0.5)"
-            }}
-            whileTap={{ scale: 0.98 }}
-            className="px-10 sm:px-14 py-5 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] text-[#0A1D44] text-lg font-bold rounded-full hover:from-[#f3d78a] hover:to-[#D6B45C] transition-all duration-500 shadow-xl hover:shadow-2xl inline-flex items-center gap-3 group"
-          >
-            <span>Start Shopping</span>
-            <motion.svg 
-              className="h-6 w-6"
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
+          <Link href="/shop"> 
+            <motion.button 
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 20px 40px -12px rgba(214, 180, 92, 0.5)"
+              }}
+              whileTap={{ scale: 0.98 }}
+              className="px-10 sm:px-14 py-5 bg-gradient-to-r from-[#D6B45C] to-[#f3d78a] text-[#0A1D44] text-lg font-bold rounded-full hover:from-[#f3d78a] hover:to-[#D6B45C] transition-all duration-500 shadow-xl hover:shadow-2xl inline-flex items-center gap-3 group"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </motion.svg>
-          </motion.button>
+              <span>Start Shopping</span>
+              <motion.svg 
+                className="h-6 w-6"
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </motion.svg>
+            </motion.button>
           </Link>
         </motion.div>
       </div>
