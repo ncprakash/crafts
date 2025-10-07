@@ -1,223 +1,200 @@
-import React, { useState } from "react";
-import { toast } from "react-hot-toast";
-
-interface CustomizationData {
-  uploadedImages?: string[];
-  phoneType?: string;
-}
+// components/ProductCustomizer.tsx
+import React, { useState, useCallback } from 'react';
+import { Upload, X, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface ProductCustomizerProps {
   productType: "polaroid" | "phoneCase";
-  itemId: string; // OrderItem ID
-  onCustomizationComplete: (data: CustomizationData) => void;
+  itemId: string;
+  maxImages: number; // Add this prop
+  onCustomizationComplete: (data: { uploadedImages: string[]; phoneType?: string }) => void;
 }
 
-const ProductCustomizer: React.FC<ProductCustomizerProps> = ({
-  productType,
-  itemId,
-  onCustomizationComplete,
-}) => {
+export default function ProductCustomizer({ 
+  productType, 
+  itemId, 
+  maxImages,
+  onCustomizationComplete 
+}: ProductCustomizerProps) {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [phoneType, setPhoneType] = useState<string>("");
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [phoneType, setPhoneType] = useState('');
 
-  // Upload images to Cloudinary and update DB
-  const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    itemId: string
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
 
-    if (productType === "polaroid" && uploadedImages.length + files.length > 12) {
-      setUploadError(
-        `You can only upload up to 12 images for polaroids. You already have ${uploadedImages.length} images.`
-      );
+    const newImages: string[] = [];
+    const remainingSlots = maxImages - uploadedImages.length;
+
+    // Only process up to the remaining available slots
+    for (let i = 0; i < Math.min(files.length, remainingSlots); i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        newImages.push(result);
+        
+        // When all new images are processed, update state
+        if (newImages.length === Math.min(files.length, remainingSlots)) {
+          setUploadedImages(prev => [...prev, ...newImages]);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    event.target.value = ''; // Reset input
+  }, [maxImages, uploadedImages.length]);
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = () => {
+    if (uploadedImages.length === 0) {
+      alert('Please upload at least one image');
       return;
     }
 
-    setIsUploading(true);
-    setUploadError(null);
-
-    try {
-      const uploadedUrls = await Promise.all(
-        Array.from(files).map(async (file) => {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append(
-            "upload_preset",
-            process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || ""
-          );
-
-          const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-            { method: "POST", body: formData }
-          );
-
-          if (!response.ok) throw new Error("Upload failed");
-
-          const data = await response.json();
-          console.log(data.secure_url);
-          return data.secure_url;
-        })
-      );
-
-      // Create the updated images array FIRST
-      const updatedImagesList = [...uploadedImages, ...uploadedUrls];
-      
-      // Update frontend state
-      setUploadedImages(updatedImagesList);
-      
-      console.log("=== Frontend Debug ===");
-      console.log("itemId:", itemId);
-      console.log("phoneType:", phoneType);
-      console.log("updatedImagesList:", updatedImagesList);
-      console.log("updatedImagesList length:", updatedImagesList.length);
-      
-      // Update backend with the NEW combined array
-      const response = await fetch("/api/orders/updateOrderItem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderItemId: itemId,
-          imageUrls: updatedImagesList,
-          phoneType: phoneType || undefined,
-        }),
-      });
-
-      console.log("Response status:", response.status);
-      console.log("Response Content-Type:", response.headers.get("content-type"));
-
-      // Get the response as text first to see what we're actually getting
-      const responseText = await response.text();
-      console.log("Raw response:", responseText.substring(0, 500));
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      // Try to parse as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log("API Response:", result);
-      } catch (parseError) {
-        console.error("Failed to parse JSON. Response was:", responseText);
-        throw new Error("Server returned invalid JSON");
-      }
-
-      toast.success("Images uploaded and saved successfully!");
-    } catch (err: any) {
-      console.error(err);
-      setUploadError(err.message || "Failed to upload image. Please try again.");
-    } finally {
-      setIsUploading(false);
+    if (productType === 'phoneCase' && !phoneType) {
+      alert('Please select your phone type');
+      return;
     }
-  };
 
-  // Remove image from preview & update DB
-  const removeImage = async (index: number, itemId: string) => {
-    const updatedImages = uploadedImages.filter((_, i) => i !== index);
-    setUploadedImages(updatedImages);
-
-    // Update backend
-    await fetch("/api/order/updateOrderItem", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderItemId: itemId, imageUrls: updatedImages }),
+    onCustomizationComplete({
+      uploadedImages,
+      phoneType: productType === 'phoneCase' ? phoneType : undefined
     });
   };
 
-  // Submit customization (images + phoneType)
-  const handleSubmit = (itemId: string) => {
-    const customizationData: CustomizationData = {};
-
-    if (productType === "phoneCase" && phoneType) {
-      customizationData.phoneType = phoneType;
-    }
-
-    if (uploadedImages.length > 0) {
-      customizationData.uploadedImages = uploadedImages;
-    }
-
-    onCustomizationComplete(customizationData);
-    toast.success("Customization saved successfully!");
-  };
+  const remainingUploads = maxImages - uploadedImages.length;
+  const isMaxReached = uploadedImages.length >= maxImages;
 
   return (
-    <div className="bg-[#faf9f7] rounded-xl p-4 border border-gray-100">
-      {productType === "polaroid" && (
-        <>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload Images
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => handleImageUpload(e, itemId)}
-            className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100"
-          />
-          {uploadError && <p className="text-red-500 text-sm mt-2">{uploadError}</p>}
-          {isUploading && <p className="text-gray-500 text-sm mt-2">Uploading...</p>}
+    <div className="space-y-6">
+      {/* Upload Section */}
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+        {!isMaxReached ? (
+          <>
+            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 mb-2">
+              Upload your images
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              You can upload up to {maxImages} image{maxImages > 1 ? 's' : ''} ({remainingUploads} remaining)
+            </p>
+            <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+              <Upload className="w-4 h-4 mr-2" />
+              Choose Images
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={isMaxReached}
+              />
+            </label>
+          </>
+        ) : (
+          <>
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+            <p className="text-lg font-medium text-green-900 mb-2">
+              Maximum images reached
+            </p>
+            <p className="text-sm text-green-700">
+              You've uploaded all {maxImages} images. You can remove some if you want to change.
+            </p>
+          </>
+        )}
+      </div>
 
-          {/* Preview uploaded images */}
-          {uploadedImages.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {uploadedImages.map((url, idx) => (
-                <div key={idx} className="relative">
-                  <img
-                    src={url}
-                    alt={`Uploaded ${idx + 1}`}
-                    className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx, itemId)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {productType === "phoneCase" && (
-        <div className="mt-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Phone Type
+      {/* Phone Type Selection (for phone cases) */}
+      {productType === 'phoneCase' && (
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Select Your Phone Model *
           </label>
           <select
             value={phoneType}
             onChange={(e) => setPhoneType(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
           >
-            <option value="">Select</option>
-            <option value="iPhone 14 Pro">iPhone 14 Pro</option>
-            <option value="iPhone 14">iPhone 14</option>
-            <option value="Samsung S23">Samsung S23</option>
+            <option value="">Choose your phone</option>
+            <option value="iphone-15">iPhone 15</option>
+            <option value="iphone-15-pro">iPhone 15 Pro</option>
+            <option value="iphone-14">iPhone 14</option>
+            <option value="iphone-14-pro">iPhone 14 Pro</option>
+            <option value="samsung-s23">Samsung S23</option>
+            <option value="samsung-s22">Samsung S22</option>
+            <option value="other">Other Model</option>
           </select>
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => handleSubmit(itemId)}
-        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Save Customization
-      </button>
+      {/* Uploaded Images Preview */}
+      {uploadedImages.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-900">
+            Uploaded Images ({uploadedImages.length}/{maxImages})
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {uploadedImages.map((image, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={image}
+                  alt={`Upload ${index + 1}`}
+                  className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                />
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                  {index + 1}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Progress Indicator */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <div className="flex items-center justify-between text-sm mb-2">
+          <span className="text-gray-600">Upload Progress</span>
+          <span className="font-medium">
+            {uploadedImages.length} / {maxImages}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${(uploadedImages.length / maxImages) * 100}%` }}
+          ></div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {remainingUploads > 0 
+            ? `${remainingUploads} image${remainingUploads > 1 ? 's' : ''} remaining`
+            : 'All images uploaded!'
+          }
+        </p>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-4">
+        <button
+          onClick={handleSubmit}
+          disabled={uploadedImages.length === 0 || (productType === 'phoneCase' && !phoneType)}
+          className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+        >
+          Save Customizations
+        </button>
+      </div>
     </div>
   );
-};
-
-export default ProductCustomizer;
+}

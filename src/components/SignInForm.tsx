@@ -178,15 +178,7 @@ const SignInForm = () => {
             )}
           />
 
-          <div className="flex justify-end">
-            <Link 
-              href="/forgot-password" 
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
+     
           <Button 
             type="submit" 
             className="w-full bg-blue-600 text-white hover:bg-blue-700"

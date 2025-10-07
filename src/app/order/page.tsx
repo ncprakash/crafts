@@ -3,8 +3,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import ProductCustomizer from "@/components/ProductCustomizer";
-
+import CheckoutHeader from '@/components/CheckOutHeader';
+import CheckoutForm from '@/components/CheckOutForm';
+import OrderSummary from '@/components/OrderSummary';
+import PaymentSection from '@/components/PaymentSection';
+import SuccessModal from '@/components/SuccesModel';
+import LoadingState from '@/components/LayoutContent';
+import EmptyState from '@/components/EmptyState';
+import LayoutContent from '@/components/LayoutContent';
 
 interface FormData {
   first: string;
@@ -18,34 +24,30 @@ interface FormData {
   country: string;
   coupon: string;
 }
-interface ProductCustomizerProps {
-  productType: "polaroid" | "phoneCase";
-  itemId: string; // REQUIRED
-  onCustomizationComplete: (data: CustomizationData) => void;
-}
-
 
 interface CartItem {
   id: string;
+  quantity: number;
+  price: number;
   product: {
     id: string;
     name: string;
-    category?: {
-      name: string;
-    };
+    description: string;
+    images: string;
+    stock: number;
+    category: { name: string };
   };
-  quantity: number;
-  price: number;
 }
+
+
 export interface CustomizationData {
+  maxImage?:number
   uploadedImages?: string[];
   phoneType?: string;
 }
 
-
 export default function CheckoutPage() {
   const [customizationData, setCustomizationData] = useState<CustomizationData | null>(null);
-  const [showCustomizer, setShowCustomizer] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,89 +56,47 @@ export default function CheckoutPage() {
   const [countdown, setCountdown] = useState(5);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
+  const [formData, setFormData] = useState<FormData>({
+    first: '', last: '', email: '', phone: '', address: '',
+    city: '', zip: '', state: '', country: '', coupon: ''
+  });
 
-  // Format currency to Indian Rupees
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  // Razorpay payment function
-  const handleRazorpayPayment = async (orderResult: any) => {
-    if (!(window as any).Razorpay) {
-      setError('Razorpay payment gateway not loaded. Please try again.');
-      return;
+  // Fetch cart items
+  useEffect(() => {
+    if (session) {
+      fetchCartItems();
+    } else {
+      setLoading(false);
     }
+  }, [session]);
 
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_RN4opVXKWAkvwp',
-      amount: orderResult.razorpayOrder.amount,
-      currency: orderResult.razorpayOrder.currency,
-      name: 'Gunnal Crafts',
-      description: 'Order Payment',
-      order_id: orderResult.razorpayOrder.id,
-      handler: async function (response: any) {
-        try {
-          // Verify payment on server
-          const verificationResponse = await fetch('/api/payment/verify', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            }),
-          });
-
-          const verificationResult = await verificationResponse.json();
-
-          if (verificationResult.success) {
-            // Clear cart and show success
-            await clearServerCart();
-            setOrderSuccess(true);
-            resetFormData();
-            setError('');
-            
-            // Start countdown
-            startCountdown();
-          } else {
-            setError('Payment verification failed. Please contact support.');
-          }
-        } catch (error) {
-          console.error('Payment verification error:', error);
-          setError('Payment verification failed. Please contact support.');
-        }
-      },
-      prefill: {
-        name: `${formData.first} ${formData.last}`,
-        email: formData.email,
-        contact: formData.phone,
-      },
-      notes: {
-        address: formData.address,
-      },
-      theme: {
-        color: '#3395ff',
-      },
-    };
-
-    const razorpay = new (window as any).Razorpay(options);
-    razorpay.on('payment.failed', function (response: any) {
-      setError(`Payment failed: ${response.error.description}. Please try again.`);
-    });
-    razorpay.open();
+  const fetchCartItems = async () => {
+    try {
+      const response = await fetch('/api/cart/items');
+      if (!response.ok) throw new Error('Failed to fetch cart items');
+      
+      const data = await response.json();
+      setCartItems(data.items || []);
+      setTotal(data.total || 0);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+      setError('Failed to load cart items. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Start countdown for redirect
+  const clearServerCart = async () => {
+    try {
+      await fetch('/api/cart/items', { method: 'DELETE' });
+      window.dispatchEvent(new CustomEvent('cartCleared'));
+    } catch (error) {
+      console.log('Error clearing server cart:', error);
+    }
+  };
+
   const startCountdown = () => {
     const countdownInterval = setInterval(() => {
       setCountdown((prev) => {
@@ -149,100 +109,7 @@ export default function CheckoutPage() {
     }, 1000);
   };
 
-  // Reset form data
-  const resetFormData = () => {
-    setFormData({
-      first: '', last: '', email: '', phone: '', address: '',
-      city: '', zip: '', state: '', country: '', coupon: ''
-    });
-  };
-
-  // Fetch server-side cart items
-  useEffect(() => {
-    if (session) {
-      fetchCartItems();
-    } else {
-      setLoading(false);
-    }
-  }, [session]);
-
-  const fetchCartItems = async () => {
-    try {
-      const response = await fetch('/api/cart/items');
-      if (!response.ok) {
-        throw new Error('Failed to fetch cart items');
-      }
-      
-      const data = await response.json();
-      setCartItems(data.items || []);
-      setTotal(data.total || 0);
-      setItemCount(data.itemCount || 0);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
-      setError('Failed to load cart items. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearServerCart = async () => {
-    try {
-      const response = await fetch('/api/cart/items', {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        console.log('Server cart cleared successfully');
-        window.dispatchEvent(new CustomEvent('cartCleared'));
-      }
-    } catch (error) {
-      console.log('Error clearing server cart:', error);
-    }
-  };
-
-  const [formData, setFormData] = useState<FormData>({
-    first: '', last: '', email: '', phone: '', address: '',
-    city: '', zip: '', state: '', country: '', coupon: ''
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    // Input validation based on field type
-    let validatedValue = value;
-    
-    switch (name) {
-      case 'first':
-      case 'last':
-        // Only allow letters, spaces, and hyphens for names
-        validatedValue = value.replace(/[^a-zA-Z\s-]/g, '');
-        break;
-      case 'phone':
-        // Only allow numbers, spaces, hyphens, and plus sign for phone
-        validatedValue = value.replace(/[^0-9\s\-+]/g, '');
-        break;
-      case 'zip':
-        // Only allow numbers and letters for ZIP code
-        validatedValue = value.replace(/[^0-9a-zA-Z]/g, '');
-        break;
-      case 'city':
-      case 'state':
-      case 'country':
-        // Only allow letters, spaces, and hyphens for location fields
-        validatedValue = value.replace(/[^a-zA-Z\s-]/g, '');
-        break;
-      case 'email':
-        // Email validation - allow standard email characters
-        validatedValue = value.replace(/[^a-zA-Z0-9@._-]/g, '');
-        break;
-      default:
-        validatedValue = value;
-    }
-    
-    setFormData(prev => ({ ...prev, [name]: validatedValue }));
-  };
-
   const validateForm = (): boolean => {
-    // Form validation
     const requiredFields = ['first', 'last', 'email', 'phone', 'address', 'city', 'zip', 'state', 'country'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof FormData]?.trim());
     
@@ -251,14 +118,12 @@ export default function CheckoutPage() {
       return false;
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
       return false;
     }
 
-    // Phone validation (at least 10 digits)
     const phoneDigits = formData.phone.replace(/\D/g, '');
     if (phoneDigits.length < 10) {
       setError('Please enter a valid phone number (at least 10 digits)');
@@ -281,7 +146,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Validate form
     if (!validateForm()) {
       return;
     }
@@ -302,7 +166,8 @@ export default function CheckoutPage() {
         country: formData.country,
         cartItems: cartItems,
         total: total,
-        customizationData: customizationData
+        customizationData: customizationData,
+        paymentMethod: paymentMethod
       };
 
       const orderResponse = await fetch('/api/orders', {
@@ -343,7 +208,6 @@ export default function CheckoutPage() {
           // Clear cart and show success
           await clearServerCart();
           setOrderSuccess(true);
-          resetFormData();
           setError('');
           startCountdown();
         } catch (error) {
@@ -360,6 +224,70 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleRazorpayPayment = async (orderResult: any) => {
+    if (!(window as any).Razorpay) {
+      setError('Razorpay payment gateway not loaded. Please try again.');
+      return;
+    }
+
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_RN4opVXKWAkvwp',
+      amount: orderResult.razorpayOrder.amount,
+      currency: orderResult.razorpayOrder.currency,
+      name: 'Gunnal Crafts',
+      description: 'Order Payment',
+      order_id: orderResult.razorpayOrder.id,
+      handler: async function (response: any) {
+        try {
+          // Verify payment on server
+          const verificationResponse = await fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+
+          const verificationResult = await verificationResponse.json();
+
+          if (verificationResult.success) {
+            // Clear cart and show success
+            await clearServerCart();
+            setOrderSuccess(true);
+            setError('');
+            startCountdown();
+          } else {
+            setError('Payment verification failed. Please contact support.');
+          }
+        } catch (error) {
+          console.error('Payment verification error:', error);
+          setError('Payment verification failed. Please contact support.');
+        }
+      },
+      prefill: {
+        name: `${formData.first} ${formData.last}`,
+        email: formData.email,
+        contact: formData.phone,
+      },
+      notes: {
+        address: formData.address,
+      },
+      theme: {
+        color: '#3395ff',
+      },
+    };
+
+    const razorpay = new (window as any).Razorpay(options);
+    razorpay.on('payment.failed', function (response: any) {
+      setError(`Payment failed: ${response.error.description}. Please try again.`);
+    });
+    razorpay.open();
+  };
+
   // Handle redirect when countdown reaches 0
   useEffect(() => {
     if (orderSuccess && countdown === 0) {
@@ -370,358 +298,156 @@ export default function CheckoutPage() {
   // Redirect if not signed in
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#f9f5f0] px-4 py-8 md:py-12 flex justify-center">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 text-center">
-          <h2 className="text-xl font-bold text-[#0A1D44] mb-4">Please Sign In</h2>
-          <p className="text-gray-600 mb-4">You need to be signed in to place an order.</p>
-          <Link href="/sign-in" className="inline-block bg-[#FDC93B] text-[#0A1D44] font-bold px-6 py-3 rounded-xl">
+      <EmptyState
+        title="Please Sign In"
+        description="You need to be signed in to place an order."
+        action={
+          <Link href="/sign-in" className="btn-primary">
             Sign In
           </Link>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   // Show success message
   if (orderSuccess) {
     return (
-      <div className="min-h-screen bg-[#f9f5f0] px-4 py-8 md:py-12 flex justify-center">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 text-center">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-[#0A1D44] mb-2">🎉 Order Placed Successfully!</h2>
-            <p className="text-gray-600 mb-4">
-              {paymentMethod === 'cod' 
-                ? 'Your order has been placed successfully. Please keep the payment ready for cash on delivery.'
-                : 'Your order has been placed successfully. You will receive a confirmation email shortly.'}
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-blue-700">
-                ✅ Your cart has been cleared and items have been added to your order.
-              </p>
-            </div>
-          </div>
-          
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-green-800 mb-2">What happens next?</h3>
-            <ul className="text-sm text-green-700 space-y-1 text-left">
-              <li>• You'll receive an order confirmation email shortly</li>
-              <li>• Our team will review and process your order within 24 hours</li>
-              <li>• You'll get shipping updates via email and SMS</li>
-              <li>• Your order will be delivered within 3-5 business days</li>
-            </ul>
-          </div>
-          
-          <div className="text-sm text-gray-500">
-            <p>Redirecting to dashboard in {countdown} seconds...</p>
-            <p className="mt-2">
-              <strong>Need help?</strong> Contact to gunnalcreation@gmail.com
-            </p>
-          </div>
-        </div>
-      </div>
+      <SuccessModal
+        paymentMethod={paymentMethod}
+        countdown={countdown}
+      />
     );
   }
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f9f5f0] px-4 py-8 md:py-12 flex justify-center">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A1D44] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your cart...</p>
-        </div>
-      </div>
-    );
+    return
+   
+      <LoadingState />
+   
   }
 
   // Redirect if cart is empty
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#f9f5f0] px-4 py-8 md:py-12 flex justify-center">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 text-center">
-          <h2 className="text-xl font-bold text-[#0A1D44] mb-4">Your Cart is Empty</h2>
-          <p className="text-gray-600 mb-4">Add some items to your cart before checkout.</p>
-          <Link href="/shop" className="inline-block bg-[#FDC93B] text-[#0A1D44] font-bold px-6 py-3 rounded-xl">
+      <EmptyState
+        title="Your Cart is Empty"
+        description="Add some items to your cart before checkout."
+        action={
+          <Link href="/shop" className="btn-primary">
             Continue Shopping
           </Link>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   return (
-    <section className="min-h-screen relative flex justify-center items-center py-8">
-      {/* Background image */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0A1D44] via-[#1e3a8a] to-[#3730a3]">
-        {/* Elegant pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            backgroundSize: '60px 60px'
-          }}></div>
-        </div>
-        
-        {/* Animated accent lines */}
-        <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-60 animate-pulse"></div>
-        <div className="absolute bottom-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-40 animate-pulse" style={{animationDelay: '1s'}}></div>
-        
-        {/* Corner accents */}
-        <div className="absolute top-8 right-8 w-16 h-16 border-t-2 border-r-2 border-[#FDC93B] opacity-60"></div>
-        <div className="absolute bottom-8 left-8 w-16 h-16 border-b-2 border-l-2 border-[#FDC93B] opacity-60"></div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-20 left-1/4 w-2 h-2 bg-[#FDC93B] rounded-full animate-ping opacity-75"></div>
-        <div className="absolute top-40 right-1/4 w-1 h-1 bg-white rounded-full animate-ping opacity-50" style={{animationDelay: '2s'}}></div>
-        <div className="absolute bottom-32 left-1/3 w-1.5 h-1.5 bg-[#FDC93B] rounded-full animate-ping opacity-60" style={{animationDelay: '1s'}}></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
+      {/* Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Main content */}
-      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-6 text-[#0A1D44]">
-        {/* Header */}
-        <div className="flex items-center gap-2 font-semibold text-lg">
-          <Link href="/cart">
-            <span className="text-xl cursor-pointer">←</span>
-          </Link>
-          Checkout
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Order Summary */}
-        <div className="border-b pb-4">
-          <h3 className="font-bold text-sm mb-2">Order Summary</h3>
-          {cartItems.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm mb-2">
-              <div className="flex-1">
-                <p className="font-semibold">{item.product.name}</p>
-                <p className="text-gray-500 text-xs">Quantity: {item.quantity}</p>
-              </div>
-              <p className="font-bold text-right">{formatCurrency(item.price * item.quantity)}</p>
-            </div>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Coupon Code */}
-          <input
-            name="coupon"
-            placeholder="Add coupon code for discount"
-            value={formData.coupon}
-            onChange={handleChange}
-            className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-          />
-
-          {/* Form Fields */}
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <input
-                name="first"
-                type="text"
-                placeholder="First name *"
-                value={formData.first}
-                onChange={handleChange}
-                maxLength={50}
-                required
-                className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-              />
-              <input
-                name="last"
-                type="text"
-                placeholder="Last name *"
-                value={formData.last}
-                onChange={handleChange}
-                maxLength={50}
-                required
-                className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-              />
-            </div>
-            <input
-              name="email"
-              type="email"
-              placeholder="Email *"
-              value={formData.email}
-              onChange={handleChange}
-              maxLength={100}
-              required
-              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-            />
-            <input
-              name="phone"
-              type="tel"
-              placeholder="Phone number *"
-              value={formData.phone}
-              onChange={handleChange}
-              maxLength={15}
-              required
-              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-            />
-            <textarea
-              name="address"
-              placeholder="Shipping address *"
-              rows={3}
-              value={formData.address}
-              onChange={handleChange}
-              maxLength={200}
-              required
-              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-            />
-            <div className="flex gap-2">
-              <input
-                name="city"
-                type="text"
-                placeholder="City *"
-                value={formData.city}
-                onChange={handleChange}
-                maxLength={50}
-                required
-                className="flex-1 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-              />
-              <input
-                name="zip"
-                type="text"
-                placeholder="ZIP code *"
-                value={formData.zip}
-                onChange={handleChange}
-                maxLength={10}
-                required
-                className="w-24 px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-              />
-            </div>
-            <input
-              name="state"
-              type="text"
-              placeholder="State *"
-              value={formData.state}
-              onChange={handleChange}
-              maxLength={50}
-              required
-              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-            />
-            <input
-              name="country"
-              type="text"
-              placeholder="Country *"
-              value={formData.country}
-              onChange={handleChange}
-              maxLength={50}
-              required
-              className="w-full px-4 py-3 rounded-lg bg-[#f5f5f5] text-sm focus:outline-none focus:ring-2 focus:ring-[#D6B45C]"
-            />
-          </div>
-
-          {/* Product Customizer */}
-          {cartItems.map((item) => {
-  const name = item.product.name?.toLowerCase() || "";
-  const category = item.product.category?.name?.toLowerCase() || "";
-
-  if (
-    name.includes("polaroid") ||
-    name.includes("poloriod") || // handle typo
-    category.includes("polaroid") ||
-    category.includes("poloriod") ||
-    name.includes("phone") ||
-    category.includes("phone")
-  ) {
-    return (
-      <div key={"customizer-" + item.id} className="mb-6 mt-6">
-        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 hover:shadow-md transition-all duration-300">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">
-            Personalize Your{" "}
-            {name.includes("phone") || category.includes("phone")
-              ? "Phone Case"
-              : "Polaroid"}
-          </h3>
-          <p className="text-sm text-gray-500 mb-5">
-            Upload your images or choose customization options to make it uniquely yours.
-          </p>
-          <div className="bg-[#faf9f7] rounded-xl p-4 border border-gray-100">
-          <ProductCustomizer
-  itemId={item.id} // ✅ required prop
-  productType={
-    name.includes("phone") || category.includes("phone")
-      ? "phoneCase"
-      : "polaroid"
-  }
-  onCustomizationComplete={(data: CustomizationData) => { // ✅ typed parameter
-    setCustomizationData(data);
-    setShowCustomizer(false);
-  }}
-/>
-
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-})}
-
-
-
-          {/* Payment Method Selection */}
-          <div className="space-y-3 text-sm">
-            <div className="space-y-3">
-              <span className="font-semibold">Payment Method *</span>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="razorpay"
-                    checked={paymentMethod === 'razorpay'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-4 h-4 text-[#FDC93B] bg-gray-100 border-gray-300 focus:ring-[#FDC93B] focus:ring-2"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
-                      <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
-                      </svg>
-                    </div>
-                    <span>Online Payment (Credit/Debit Card, UPI, Net Banking)</span>
+      <div className="relative z-10 max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Checkout Form */}
+          <div className="space-y-6">
+            <CheckoutHeader itemCount={cartItems.length} total={total} />
+            
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
                   </div>
-                </label>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <CheckoutForm
+                formData={formData}
+                setFormData={setFormData}
+                cartItems={cartItems}
+                customizationData={customizationData}
+                setCustomizationData={setCustomizationData}
+              />
+            </div>
+          </div>
+
+          {/* Right Column - Order Summary & Payment */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <OrderSummary cartItems={cartItems} total={total} />
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <PaymentSection
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                total={total}
+                isSubmitting={isSubmitting}
+                onSubmit={handleSubmit}
+              />
+            </div>
+
+            {/* Trust Badges */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="text-center space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900">Secure & Trusted</h3>
+                <div className="flex justify-center items-center space-x-6 opacity-60">
+                  <div className="flex items-center space-x-2">
+                    <ShieldCheckIcon className="h-5 w-5 text-green-600" />
+                    <span className="text-xs text-gray-600">SSL Secure</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <LockClosedIcon className="h-5 w-5 text-blue-600" />
+                    <span className="text-xs text-gray-600">256-bit Encryption</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <DevicePhoneMobileIcon className="h-5 w-5 text-purple-600" />
+                    <span className="text-xs text-gray-600">PCI Compliant</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Summary */}
-          <div className="border-t pt-4 text-sm">
-            <div className="flex justify-between">
-              <p>Subtotal</p>
-              <p>{formatCurrency(total)}</p>
-            </div>
-            <div className="flex justify-between">
-              <p>Delivery</p>
-              <p className="text-green-600">Free</p>
-            </div>
-            <div className="flex justify-between font-bold text-lg mt-2">
-              <p>Total</p>
-              <p>{formatCurrency(total)}</p>
-            </div>
-          </div>
-
-          {/* Order Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3 bg-[#FDC93B] text-[#0A1D44] font-bold rounded-xl shadow-lg hover:bg-[#e4b230] transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#D6B45C] focus:ring-offset-2"
-          >
-            {isSubmitting ? 'Placing Order...' : `Place Order - ${formatCurrency(total)}`}
-          </button>
-        </form>
+        </div>
       </div>
-    </section>
+    </div>
+  );
+}
+
+// Icons
+function ShieldCheckIcon(props: any) {
+  return (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
+function LockClosedIcon(props: any) {
+  return (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  );
+}
+
+function DevicePhoneMobileIcon(props: any) {
+  return (
+    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
   );
 }
