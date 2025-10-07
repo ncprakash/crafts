@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 
 interface OrderItemData {
   imageUrls?: string[];
-  phoneType?: string;
+  phoneType?: string | null;
   product?: {
     name: string;
     category?: { name: string };
@@ -18,20 +18,26 @@ interface AdminOrderItemProps {
 const AdminOrderItem: React.FC<AdminOrderItemProps> = ({ orderItemId }) => {
   const [data, setData] = useState<OrderItemData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch(`/api/getImagesOrPhoneType/${orderItemId}`);
+        if (!response.ok) {
+          console.error(`Order item ${orderItemId} not found or failed to fetch.`);
+          setData(null);
+          return;
+        }
 
-        if (!response.ok) throw new Error("Not found");
+        // Parse the response only once
+        const result: OrderItemData[] = await response.json();
+        console.log(result);
 
-        const result: OrderItemData = await response.json();
-        setData(result);
+        // If you just want the first item:
+        setData(result[0] || null);
       } catch (err) {
-        console.warn(`Order item ${orderItemId} not found or failed to fetch.`);
-        setData(null); // safely fallback to null
+        console.warn(`Order item ${orderItemId} fetch failed:`, err);
+        setData(null);
       } finally {
         setLoading(false);
       }
@@ -40,9 +46,8 @@ const AdminOrderItem: React.FC<AdminOrderItemProps> = ({ orderItemId }) => {
     fetchData();
   }, [orderItemId]);
 
-  if (loading) return null; // or <p>Loading...</p>
-
-  if (!data) return null; // gracefully render nothing if API fails
+  if (loading) return <p>Loading...</p>;
+  if (!data) return null;
 
   const { imageUrls, phoneType, product } = data;
   const name = product?.name?.toLowerCase() || "";
