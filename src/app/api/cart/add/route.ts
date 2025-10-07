@@ -5,7 +5,8 @@ import { db } from '@/lib/db';
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-      console.log(session);
+    console.log('Session:', session); // Debug log
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -15,6 +16,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { productId, quantity = 1 } = body;
+
+    // Debug the user ID
+    console.log('User ID:', session.user.id);
+    console.log('User ID type:', typeof session.user.id);
 
     // Get the product details
     const product = await db.product.findUnique({
@@ -36,10 +41,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // FIX: Handle different ID types (string vs number)
+    let userId: number;
+    
+    if (typeof session.user.id === 'string') {
+      // Try to parse as integer, but have a fallback
+      const parsedId = parseInt(session.user.id);
+      if (isNaN(parsedId)) {
+        // If it's a string that can't be parsed (like from Google OAuth),
+        // we need to find the user by email instead
+        const user = await db.user.findUnique({
+          where: { email: session.user.email }
+        });
+        
+        if (!user) {
+          return NextResponse.json(
+            { error: 'User account not found. Please complete your profile.' },
+            { status: 404 }
+          );
+        }
+        
+        userId = user.id;
+      } else {
+        userId = parsedId;
+      }
+    } else {
+      userId = session.user.id;
+    }
+
+    console.log('Final User ID:', userId);
+
     // Get or create user's cart order
     let cartOrder = await db.order.findFirst({
       where: {
-        userId: parseInt(session.user.id),
+        userId: userId,
         status: 'cart'
       }
     });
@@ -48,8 +83,8 @@ export async function POST(request: NextRequest) {
       // Create new cart order
       cartOrder = await db.order.create({
         data: {
-          userId: parseInt(session.user.id),
-          customerName: session.user.username || 'Unknown',
+          userId: userId,
+          customerName: session.user.name || session.user.username || 'Unknown',
           customerEmail: session.user.email || '',
           shippingAddress: '',
           total: 0,
@@ -73,7 +108,7 @@ export async function POST(request: NextRequest) {
         where: { id: existingOrderItem.id },
         data: {
           quantity: existingOrderItem.quantity + quantity,
-          price: product.price // Decimal stays fine
+          price: product.price
         }
       });
     } else {
@@ -83,17 +118,19 @@ export async function POST(request: NextRequest) {
           orderId: cartOrder.id,
           productId: productId,
           quantity: quantity,
-          price: product.price // Decimal stays fine
+          price: product.price
         }
       });
     }
 
     // Update order total
     const orderItems = await db.orderItem.findMany({
-      where: { orderId: cartOrder.id }
+      where: { orderId: cartOrder.id },
+      include: {
+        product: true
+      }
     });
 
-    // Safely convert Decimal to number
     const total = orderItems.reduce((sum, item) => {
       return sum + (item.price.toNumber() * item.quantity);
     }, 0);

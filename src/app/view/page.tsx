@@ -98,21 +98,26 @@ function ViewPageContent() {
   }
   
   const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // ✅ Prevents page refresh
-    e.stopPropagation(); // ✅ Additional protection
+    e.preventDefault();
+    e.stopPropagation();
     
     if (!product || addingToCart) return;
     setAddingToCart(true);
-
+  
     try {
       const response = await fetch("/api/cart/add", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product.id, quantity }),
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          productId: product.id, 
+          quantity,
+        }),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
         addToCart(product);
         setToast({
@@ -121,17 +126,32 @@ function ViewPageContent() {
           type: "success",
         });
       } else {
-        setToast({
-          show: true,
-          message: data.error || "Failed to add to cart",
-          type: "error",
-        });
+        // Handle specific error cases
+        if (response.status === 401) {
+          setToast({
+            show: true,
+            message: "Please sign in to add items to cart",
+            type: "error",
+          });
+        } else if (response.status === 404 && data.error?.includes('User account')) {
+          setToast({
+            show: true,
+            message: "Please complete your profile setup",
+            type: "error",
+          });
+        } else {
+          setToast({
+            show: true,
+            message: data.error || "Failed to add to cart",
+            type: "error",
+          });
+        }
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
       setToast({
         show: true,
-        message: "Failed to add to cart",
+        message: "Network error. Please try again.",
         type: "error",
       });
     } finally {
@@ -304,7 +324,6 @@ function ViewPageContent() {
       </div>
     </div>
 
-    {/* Add to Cart Button - Full width on mobile, auto on desktop */}
     <button
       type="button"
       onClick={handleAddToCart}
