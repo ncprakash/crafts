@@ -1,6 +1,7 @@
 // components/CheckoutForm.tsx
 import { useState } from 'react';
 import ProductCustomizer from "@/components/ProductCustomizer";
+import { CartItem } from "@/types/cart";
 
 interface FormData {
   first: string;
@@ -15,17 +16,8 @@ interface FormData {
   coupon: string;
 }
 
-interface CartItem {
-  id: string;
-  product: {
-    id: string;
-    name: string;
-    category?: {
-      name: string;
-    };
-  };
-}
 
+  
 interface CustomizationData {
   uploadedImages?: string[];
   phoneType?: string;
@@ -311,11 +303,11 @@ export default function CheckoutForm({
               <ProductCustomizer
   itemId={currentCustomizingItem.id}
   productType={
-    currentCustomizingItem.product.name?.toLowerCase().includes("phone")
-      ? "phoneCase"
+    currentCustomizingItem.product.name.toLowerCase().includes("phone") 
+      ? "phoneCase" 
       : "polaroid"
   }
-  maxImages={currentCustomizingItem.quantity} // ✅ match maxImages to quantity ordered
+  maxImages={currentCustomizingItem.quantity} // ✅ Works now
   onCustomizationComplete={(data) => {
     setCustomizationData(data);
     setShowCustomizer(false);

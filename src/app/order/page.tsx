@@ -8,9 +8,9 @@ import CheckoutForm from '@/components/CheckOutForm';
 import OrderSummary from '@/components/OrderSummary';
 import PaymentSection from '@/components/PaymentSection';
 import SuccessModal from '@/components/SuccesModel';
-import LoadingState from '@/components/LayoutContent';
+import LoadingState from '@/components/LodingState';
 import EmptyState from '@/components/EmptyState';
-import LayoutContent from '@/components/LayoutContent';
+
 
 interface FormData {
   first: string;
@@ -322,10 +322,7 @@ export default function CheckoutPage() {
 
   // Show loading state
   if (loading) {
-    return
-   
-      <LoadingState />
-   
+    return <LoadingState />;
   }
 
   // Redirect if cart is empty
