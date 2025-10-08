@@ -42,6 +42,7 @@ interface CartItem {
 
 export interface CustomizationData {
   maxImage?:number
+  orderId?:string
   uploadedImages?: string[];
   phoneType?: string;
 }
@@ -377,6 +378,7 @@ export default function CheckoutPage() {
                 cartItems={cartItems}
                 customizationData={customizationData}
                 setCustomizationData={setCustomizationData}
+                orderId={customizationData?.orderId?.toString()}
               />
             </div>
           </div>

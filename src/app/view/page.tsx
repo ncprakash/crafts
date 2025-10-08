@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { motion } from 'framer-motion';
-import { Star, Heart, ShoppingCart, ArrowLeft, Share2, MessageCircle, Package, Truck, Shield } from 'lucide-react';
+import {ShoppingCart, ArrowLeft,  Package, Truck, Shield } from 'lucide-react';
 import Link from 'next/link';
 import Toast from '@/components/Toast';
 
@@ -117,7 +117,8 @@ function ViewPageContent() {
       });
   
       const data = await response.json();
-  
+      console.log(response);
+      console.log(data);
       if (response.ok) {
         addToCart(product);
         setToast({

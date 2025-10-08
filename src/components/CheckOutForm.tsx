@@ -1,7 +1,6 @@
 // components/CheckoutForm.tsx
 import { useState } from 'react';
 import ProductCustomizer from "@/components/ProductCustomizer";
-import { CartItem } from "@/types/cart";
 
 interface FormData {
   first: string;
@@ -16,8 +15,18 @@ interface FormData {
   coupon: string;
 }
 
+interface CartItem {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    category?: {
+      name: string;
+    };
+  };
+   quantity: number;
+}
 
-  
 interface CustomizationData {
   uploadedImages?: string[];
   phoneType?: string;
@@ -29,6 +38,7 @@ interface CheckoutFormProps {
   cartItems: CartItem[];
   customizationData: CustomizationData | null;
   setCustomizationData: (data: CustomizationData) => void;
+  orderId?: string;
 }
 
 export default function CheckoutForm({
@@ -36,7 +46,8 @@ export default function CheckoutForm({
   setFormData,
   cartItems,
   customizationData,
-  setCustomizationData
+  setCustomizationData,
+  orderId
 }: CheckoutFormProps) {
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [currentCustomizingItem, setCurrentCustomizingItem] = useState<CartItem | null>(null);
@@ -82,54 +93,38 @@ export default function CheckoutForm({
       
       <div className="space-y-6">
         {/* Coupon Section */}
-     
+      
 
         {/* Personalization Section */}
         {cartItems.map((item) => {
-  const name = item.product.name?.toLowerCase() || "";
-  const category = item.product.category?.name?.toLowerCase() || "";
-  const isCustomizable =
-    name.includes("polaroid") ||
-    name.includes("phone") ||
-    category.includes("polaroid") ||
-    category.includes("phone");
+          const name = item.product.name?.toLowerCase() || "";
+          const category = item.product.category?.name?.toLowerCase() || "";
+          const isCustomizable = name.includes("polaroid") || name.includes("phone") || 
+                               category.includes("polaroid") || category.includes("phone");
 
-  if (!isCustomizable) return null;
+          if (!isCustomizable) return null;
 
-// set your threshold here
-
-  return (
-    <div key={`customizer-${item.id}`} className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-        <div>
-          <h3 className="font-semibold text-blue-900">
-            Personalize Your {name.includes("phone") ? "Phone Case" : "Polaroid"}
-          </h3>
-          <p className="text-sm text-blue-700 mt-1">
-            Make it uniquely yours with custom images
-          </p>
-          
-            <p className="text-sm text-red-600 mt-1">
-              You have uploaded too many images. Please contact us at{" "}
-              <span className="font-semibold">+91 78992 51962</span> for assistance.
-            </p>
-         
-        </div>
-
-    
-          <button
-            onClick={() => handleCustomize(item)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Customize
-          </button>
-    
-    
-      </div>
-    </div>
-  );
-})}
-
+          return (
+            <div key={`customizer-${item.id}`} className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-blue-900">
+                    Personalize Your {name.includes("phone") ? "Phone Case" : "Polaroid"}
+                  </h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Make it uniquely yours with custom images
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleCustomize(item)}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Customize
+                </button>
+              </div>
+            </div>
+          );
+        })}
 
         {/* Form Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -284,40 +279,39 @@ export default function CheckoutForm({
       </div>
 
       {/* Customizer Modal */}
-      {showCustomizer && currentCustomizingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold">Customize Your Product</h3>
-                <button
-                  onClick={() => setShowCustomizer(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <ProductCustomizer
-  itemId={currentCustomizingItem.id}
-  productType={
-    currentCustomizingItem.product.name.toLowerCase().includes("phone") 
-      ? "phoneCase" 
-      : "polaroid"
-  }
-  maxImages={currentCustomizingItem.quantity} // ✅ Works now
-  onCustomizationComplete={(data) => {
-    setCustomizationData(data);
-    setShowCustomizer(false);
-  }}
-/>
-
-            </div>
-          </div>
+{showCustomizer && currentCustomizingItem && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold">Customize Your Product</h3>
+          <button
+            onClick={() => setShowCustomizer(false)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-      )}
+        
+        <ProductCustomizer
+          itemId={currentCustomizingItem.id}
+          productType={
+            currentCustomizingItem.product.name?.toLowerCase().includes("phone") ? 
+            "phoneCase" : "polaroid"
+          }
+          maxImages={currentCustomizingItem.quantity} // Quantity determines max images
+          orderId={orderId || ""} // Pass the order ID here
+          onCustomizationComplete={(data) => {
+            setCustomizationData(data);
+            setShowCustomizer(false);
+          }}
+        />
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

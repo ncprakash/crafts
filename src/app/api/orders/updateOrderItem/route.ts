@@ -5,18 +5,20 @@ import { db } from "@/lib/db";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderItemId, imageUrls, phoneType } = body;
+    const { orderItemId, orderId, imageUrls, phoneType } = body;
 
-    console.log("=== API Handler Debug ===");
+    console.log("=== Update Order Item ===");
     console.log("orderItemId:", orderItemId);
-    console.log("imageUrls received:", imageUrls);
-    console.log("imageUrls type:", typeof imageUrls);
+    console.log("orderId:", orderId);
+    console.log("imageUrls:", imageUrls);
+    console.log("phoneType:", phoneType);
 
     if (!orderItemId) {
       return NextResponse.json({ error: "Missing orderItemId" }, { status: 400 });
     }
 
-    let imagesArray: string[] | undefined = undefined;
+    // Process imageUrls array
+    let imagesArray: string[] = [];
     if (imageUrls) {
       if (typeof imageUrls === "string") {
         try {
@@ -29,18 +31,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log("imagesArray after processing:", imagesArray);
+    console.log("Processed imagesArray:", imagesArray);
 
+    // Update the order item
     const updatedItem = await db.orderItem.update({
       where: { id: orderItemId },
       data: {
-        imageUrls: imagesArray,
-        phoneType: phoneType || undefined,
+        imageUrls: imagesArray, // This will replace the entire array
+        phoneType: phoneType || null, // Set to null if empty
       },
+      include: {
+        order: {
+          select: {
+            id: true,
+            customerName: true
+          }
+        }
+      }
     });
 
-    console.log("Updated item:", updatedItem);
-    return NextResponse.json(updatedItem);
+    console.log("Successfully updated order item:", updatedItem.id);
+    
+    return NextResponse.json({
+      success: true,
+      orderItem: updatedItem,
+      message: `Updated ${imagesArray.length} image${imagesArray.length !== 1 ? 's' : ''}`
+    });
+    
   } catch (error) {
     console.error("Error updating order item:", error);
     return NextResponse.json(
