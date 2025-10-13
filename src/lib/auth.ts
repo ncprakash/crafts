@@ -63,7 +63,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    // ✅ Create Google user if not in DB
+    // ✅ Create Google user if not in DB and set proper ID
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         const existingUser = await db.user.findUnique({
@@ -71,27 +71,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
     
         if (!existingUser) {
-          await db.user.create({
+          const newUser = await db.user.create({
             data: {
               email: user.email!,
               username:
                 user.name?.toLowerCase().replace(/\s+/g, "_") ||
                 `user_${Date.now()}`,
-              password: "", // Google users don’t need password
+              password: "", // Google users don't need password
               phone_num: `google_${Date.now()}`, // temporary unique placeholder
               isVerified: true,
               role: "user",
             },
           });
+          // Store the database ID in the user object for JWT callback
+          (user as any).dbId = newUser.id.toString();
+        } else {
+          // Store the database ID in the user object for JWT callback
+          (user as any).dbId = existingUser.id.toString();
         }
       }
     
       return true;
     },
 
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, account }: any) {
       if (user) {
-        token.id = user.id;
+        // For Google OAuth users, use the database ID we stored
+        if (account?.provider === "google" && (user as any).dbId) {
+          token.id = (user as any).dbId;
+        } else {
+          token.id = user.id;
+        }
         token.username = user.username || user.name;
         token.role = user.role || "user";
       }

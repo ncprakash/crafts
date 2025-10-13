@@ -83,10 +83,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has already reviewed this product
+    // Parse user ID (should now always be a valid integer string from our auth fix)
+    const userId = parseInt(session.user.id);
+    
+    if (isNaN(userId)) {
+      console.error('Invalid user ID in session:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
     const existingReview = await db.testimonial.findFirst({
       where: {
         productName,
-        userId: parseInt(session.user.id)
+        userId: userId
       }
     });
 
@@ -99,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     const testimonial = await db.testimonial.create({
       data: {
-        userId: parseInt(session.user.id),
+        userId: userId,
         productName,
         rating,
         comment,

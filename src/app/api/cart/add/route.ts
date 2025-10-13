@@ -41,32 +41,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // FIX: Handle different ID types (string vs number)
-    let userId: number;
+    // Parse user ID (should now always be a valid integer string from our auth fix)
+    const userId = parseInt(session.user.id);
     
-    if (typeof session.user.id === 'string') {
-      // Try to parse as integer, but have a fallback
-      const parsedId = parseInt(session.user.id);
-      if (isNaN(parsedId)) {
-        // If it's a string that can't be parsed (like from Google OAuth),
-        // we need to find the user by email instead
-        const user = await db.user.findUnique({
-          where: { email: session.user.email }
-        });
-        
-        if (!user) {
-          return NextResponse.json(
-            { error: 'User account not found. Please complete your profile.' },
-            { status: 404 }
-          );
-        }
-        
-        userId = user.id;
-      } else {
-        userId = parsedId;
-      }
-    } else {
-      userId = session.user.id;
+    if (isNaN(userId)) {
+      console.error('Invalid user ID in session:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session. Please sign in again.' },
+        { status: 401 }
+      );
     }
 
     console.log('Final User ID:', userId);

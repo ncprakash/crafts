@@ -7,10 +7,20 @@ export async function GET(request: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
+    // Parse user ID (should now always be a valid integer string from our auth fix)
+    const userId = parseInt(session.user.id);
+    
+    if (isNaN(userId)) {
+      console.error('Invalid user ID in session:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session. Please sign in again.' },
+        { status: 401 }
+      );
+    }
 
     // Check if user is admin
     const user = await db.user.findUnique({
-      where: { id: parseInt(session.user.id) }
+      where: { id: userId }
     });
 
     if (!user || user.role !== 'admin') {
@@ -56,9 +66,20 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Parse user ID (should now always be a valid integer string from our auth fix)
+    const userId = parseInt(session.user.id);
+    
+    if (isNaN(userId)) {
+      console.error('Invalid user ID in session:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
     // Check if user is admin
     const user = await db.user.findUnique({
-      where: { id: parseInt(session.user.id) }
+      where: { id: userId }
     });
 
     if (!user || user.role !== 'admin') {

@@ -13,10 +13,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Parse user ID (should now always be a valid integer string from our auth fix)
+    const userId = parseInt(session.user.id);
+    
+    if (isNaN(userId)) {
+      console.error('Invalid user ID in session:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
     // Get user's cart order
     const cartOrder = await db.order.findFirst({
       where: {
-        userId: parseInt(session.user.id),
+        userId: userId,
         status: 'cart'
       }
     });
@@ -82,10 +93,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Parse user ID (should now always be a valid integer string from our auth fix)
+    const userId = parseInt(session.user.id);
+    
+    if (isNaN(userId)) {
+      console.error('Invalid user ID in session:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
     // Find and delete the user's cart order
     const cartOrder = await db.order.findFirst({
       where: {
-        userId: parseInt(session.user.id),
+        userId: userId,
         status: 'cart'
       }
     });

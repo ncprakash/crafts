@@ -59,10 +59,21 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Parse user ID (should now always be a valid integer string from our auth fix)
+      const userId = parseInt(session.user.id);
+      
+      if (isNaN(userId)) {
+        console.error('Invalid user ID in session:', session.user.id);
+        return NextResponse.json(
+          { error: 'Invalid user session. Please sign in again.' },
+          { status: 401 }
+        );
+      }
+
       // Create the order in database
       const order = await db.order.create({
         data: {
-          userId: parseInt(session.user.id),
+          userId: userId,
           customerName,
           customerEmail,
           customerPhone,
