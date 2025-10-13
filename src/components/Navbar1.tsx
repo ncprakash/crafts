@@ -12,7 +12,6 @@ import AuthModal from './AuthModal';
 import { FiMenu, FiX } from 'react-icons/fi';
 
 function Navbar1() {
-
   const { data: session, status } = useSession();
   const router = useRouter();
   const { totalItems } = useCart();
@@ -102,7 +101,7 @@ function Navbar1() {
                   className="transition-all duration-300 group-hover:rotate-12 group-hover:drop-shadow-gold"
                 />
                 <span className="font-bold text-xl tracking-tight text-white group-hover:text-[#D6B45C] transition-colors duration-300">
-                  GUNNAL CREATION
+                  GUNNAL CREATIONS
                 </span>
               </div>
             </Link>
