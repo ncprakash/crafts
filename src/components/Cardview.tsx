@@ -59,7 +59,7 @@ export default function CartItemCard({
           <div className="relative flex-shrink-0">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-2 border border-gray-200">
               <Image
-                src={imageError || !item.product.images ? '/logo.svg' : item.product.images.split(',')[0]}
+                src={imageError || !item.product?.images ? '/logo.svg' : (item.product.images.split(',')[0] || '/logo.svg')}
                 alt={item.product?.name || 'Product'}
                 width={80}
                 height={80}

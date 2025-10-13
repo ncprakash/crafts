@@ -177,7 +177,7 @@ export default function ImageUpload({
           {uploadedImages.map((imageUrl, index) => (
             <div key={index} className="relative group">
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                {imageUrl.startsWith('data:') ? (
+                {imageUrl && imageUrl.trim() !== '' ? (
                   <Image
                     src={imageUrl}
                     alt={`Uploaded image ${index + 1}`}
@@ -186,13 +186,9 @@ export default function ImageUpload({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Image
-                    src={imageUrl}
-                    alt={`Uploaded image ${index + 1}`}
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    Invalid image
+                  </div>
                 )}
               </div>
               

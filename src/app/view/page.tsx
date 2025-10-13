@@ -163,12 +163,15 @@ function ViewPageContent() {
   if (loading) return <LoadingState />;
   if (!product || !product.name) return <ProductNotFound />;
 
-  // Split images string into array
+  // Split images string into array with proper null checks
   const images: string[] = Array.isArray(product.cloudinaryImages)
-  ? product.cloudinaryImages
-  : typeof product.cloudinaryImages === 'string'
-  ? product.cloudinaryImages.split(',')
+  ? product.cloudinaryImages.filter(img => img && img.trim() !== '')
+  : typeof product.cloudinaryImages === 'string' && product.cloudinaryImages.trim() !== ''
+  ? product.cloudinaryImages.split(',').filter(img => img && img.trim() !== '')
   : [];
+
+  // Ensure we have at least one fallback image
+  const safeImages = images.length > 0 ? images : ['/logo.svg'];
 
   const price = Number(product.price);
   const discount = Number(product.discount);
@@ -201,20 +204,32 @@ function ViewPageContent() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Main Image */}
             <div className="bg-white rounded-2xl p-8 shadow-xl">
-              <Image src={images[selectedImage]} alt={product?.name || 'Product'} width={500} height={500} className="w-full h-96 object-contain" />
+              <Image 
+                src={safeImages[selectedImage] || '/logo.svg'} 
+                alt={product?.name || 'Product'} 
+                width={500} 
+                height={500} 
+                className="w-full h-96 object-contain" 
+              />
             </div>
 
             {/* Thumbnails */}
-            {images.length > 1 && (
+            {safeImages.length > 1 && (
               <div className="flex gap-4 overflow-x-auto">
-                {images.map((image: string, index: number) => (
+                {safeImages.map((image: string, index: number) => (
                   <button
                     key={index}
                     type="button"
                     onClick={() => setSelectedImage(index)}
                     className={`flex-shrink-0 w-20 h-20 bg-white rounded-lg p-2 shadow-md transition-all ${selectedImage === index ? 'ring-2 ring-[#FDC93B]' : 'hover:shadow-lg'}`}
                   >
-                    <Image src={image} alt={`${product?.name || 'Product'} ${index + 1}`} width={80} height={80} className="w-full h-full object-contain" />
+                    <Image 
+                      src={image || '/logo.svg'} 
+                      alt={`${product?.name || 'Product'} ${index + 1}`} 
+                      width={80} 
+                      height={80} 
+                      className="w-full h-full object-contain" 
+                    />
                   </button>
                 ))}
               </div>

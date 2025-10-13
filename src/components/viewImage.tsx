@@ -11,7 +11,13 @@ export default function ProductGallery({ cloudinaryImages, productName }: Produc
   const images = cloudinaryImages || [];
   const [selectedImage, setSelectedImage] = useState(0);
 
-  if (images.length === 0) return <div>No images available</div>;
+  // Filter out empty or invalid images
+  const safeImages = images.filter(img => img && img.trim() !== '');
+  
+  // Use fallback if no valid images
+  const displayImages = safeImages.length > 0 ? safeImages : ['/logo.svg'];
+
+  if (displayImages.length === 0) return <div>No images available</div>;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -19,8 +25,8 @@ export default function ProductGallery({ cloudinaryImages, productName }: Produc
       {/* Main Image */}
       <div className="bg-white rounded-2xl p-8 shadow-xl">
         <Image
-          src={images[selectedImage]}
-          alt={productName}
+          src={displayImages[selectedImage] || '/logo.svg'}
+          alt={productName || 'Product'}
           width={500}
           height={500}
           className="w-full h-96 object-contain"
@@ -28,9 +34,9 @@ export default function ProductGallery({ cloudinaryImages, productName }: Produc
       </div>
 
       {/* Thumbnails */}
-      {images.length > 1 && (
+      {displayImages.length > 1 && (
         <div className="flex gap-4 overflow-x-auto">
-          {images.map((image, index) => (
+          {displayImages.map((image, index) => (
             <button
               key={index}
               onClick={() => setSelectedImage(index)}
@@ -39,8 +45,8 @@ export default function ProductGallery({ cloudinaryImages, productName }: Produc
               }`}
             >
               <Image
-                src={image}
-                alt={`${productName} ${index + 1}`}
+                src={image || '/logo.svg'}
+                alt={`${productName || 'Product'} ${index + 1}`}
                 width={80}
                 height={80}
                 className="w-full h-full object-contain"

@@ -164,7 +164,7 @@ export default function HandmadeCollections() {
 
               <div className="flex justify-center mb-4">
                 <Image
-                  src={product.cloudinaryImages ? product.cloudinaryImages[0] : '/logo.svg'}
+                  src={product.cloudinaryImages && product.cloudinaryImages.length > 0 && product.cloudinaryImages[0] ? product.cloudinaryImages[0] : '/logo.svg'}
                   alt={product?.name || 'Product'}
                   className="w-24 h-24 object-contain"
                   width={96}
