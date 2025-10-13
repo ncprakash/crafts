@@ -97,8 +97,8 @@ export default function CheckoutForm({
 
         {/* Personalization Section */}
         {cartItems.map((item) => {
-          const name = item.product.name?.toLowerCase() || "";
-          const category = item.product.category?.name?.toLowerCase() || "";
+          const name = item.product?.name?.toLowerCase() || "";
+          const category = item.product?.category?.name?.toLowerCase() || "";
           const isCustomizable = name.includes("polaroid") || name.includes("phone") || 
                                category.includes("polaroid") || category.includes("phone");
 
@@ -298,7 +298,7 @@ export default function CheckoutForm({
         <ProductCustomizer
           itemId={currentCustomizingItem.id}
           productType={
-            currentCustomizingItem.product.name?.toLowerCase().includes("phone") ? 
+            currentCustomizingItem.product?.name?.toLowerCase().includes("phone") ? 
             "phoneCase" : "polaroid"
           }
           maxImages={currentCustomizingItem.quantity} // Quantity determines max images

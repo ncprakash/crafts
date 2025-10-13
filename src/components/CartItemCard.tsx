@@ -59,7 +59,7 @@ export default function CartItemCard({
             <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-2 border border-gray-200">
               <Image
                 src={imageError || !item.product.images ? '/logo.svg' : item.product.images.split(',')[0]}
-                alt={item.product.name}
+                alt={item.product?.name || 'Product'}
                 width={80}
                 height={80}
                 className="w-full h-full object-contain rounded-lg"
@@ -80,7 +80,7 @@ export default function CartItemCard({
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2">
-                  {item.product.name}
+                  {item.product?.name || 'Product'}
                 </h3>
                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                   {item.product.description}

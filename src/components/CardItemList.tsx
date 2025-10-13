@@ -24,8 +24,8 @@ interface CartItemsListProps {
 }
 
 const isPolaroid = (item: CartItem) =>
-  item.product.name.toLowerCase().includes('polaroid') ||
-  item.product.category.name.toLowerCase().includes('polaroid');
+  item.product?.name?.toLowerCase().includes('polaroid') ||
+  item.product?.category?.name?.toLowerCase().includes('polaroid');
 
 const getMinQuantity = (item: CartItem) => (isPolaroid(item) ? 12 : 1);
 

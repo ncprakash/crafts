@@ -17,14 +17,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { productId, quantity = 1 } = body;
 
+    // Debug the request data
+    console.log('Request body:', body);
+    console.log('Product ID:', productId);
+    console.log('Quantity:', quantity);
+    
     // Debug the user ID
     console.log('User ID:', session.user.id);
     console.log('User ID type:', typeof session.user.id);
+    console.log('Session user:', session.user);
+
+    // Test database connection first
+    console.log('Testing database connection...');
+    try {
+      await db.$connect();
+      console.log('Database connected successfully');
+    } catch (dbError) {
+      console.error('Database connection failed:', dbError);
+      throw new Error('Database connection failed');
+    }
 
     // Get the product details
+    console.log('Fetching product with ID:', productId);
     const product = await db.product.findUnique({
       where: { id: productId }
     });
+    console.log('Product found:', product ? 'Yes' : 'No');
 
     if (!product) {
       return NextResponse.json(
@@ -136,8 +154,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error adding item to cart:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+    
+    // Return more detailed error information for debugging
     return NextResponse.json(
-      { error: 'Failed to add item to cart' },
+      { 
+        error: 'Failed to add item to cart',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

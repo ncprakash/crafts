@@ -58,7 +58,7 @@ function ViewPageContent() {
     try {
       const response = await fetch(`/api/admin/products/${productId}`);
       const data = await response.json();
-      console.log("product-category-name", data.category.name);
+      console.log("product-category-name", data.category?.name);
       if (response.ok) setProduct(data);
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -69,10 +69,10 @@ function ViewPageContent() {
 
   // Check if product is Polaroid
   const isPolaroid = () => {
-    if (!product) return false;
+    if (!product || !product.name) return false;
     return (
       product.name.toLowerCase().includes("polaroid") || 
-      product.category?.name.toLowerCase().includes("polaroid")
+      product.category?.name?.toLowerCase().includes("polaroid")
     );
   };
 
@@ -87,7 +87,7 @@ function ViewPageContent() {
   }, [product]);
 
   const fetchTestimonials = async () => {
-    if (!product) return;
+    if (!product || !product.name) return;
     try {
       const response = await fetch(`/api/testimonials?productName=${encodeURIComponent(product.name)}`);
       const data = await response.json();
@@ -123,7 +123,7 @@ function ViewPageContent() {
         addToCart(product);
         setToast({
           show: true,
-          message: `${product.name} added to cart!`,
+          message: `${product?.name || 'Product'} added to cart!`,
           type: "success",
         });
       } else {
@@ -161,7 +161,7 @@ function ViewPageContent() {
   };
 
   if (loading) return <LoadingState />;
-  if (!product) return <ProductNotFound />;
+  if (!product || !product.name) return <ProductNotFound />;
 
   // Split images string into array
   const images: string[] = Array.isArray(product.cloudinaryImages)
@@ -179,7 +179,7 @@ function ViewPageContent() {
       {/* Background */}
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0A1D44] via-[#1e3a8a] to-[#3730a3]">
         <div className="absolute inset-0 opacity-10">
-          <ProductGallery cloudinaryImages={images} productName={product.name} />
+          <ProductGallery cloudinaryImages={images} productName={product?.name || 'Product'} />
         </div>
         <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-60 animate-pulse"></div>
         <div className="absolute bottom-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#FDC93B] to-transparent opacity-40 animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -201,7 +201,7 @@ function ViewPageContent() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Main Image */}
             <div className="bg-white rounded-2xl p-8 shadow-xl">
-              <Image src={images[selectedImage]} alt={product.name} width={500} height={500} className="w-full h-96 object-contain" />
+              <Image src={images[selectedImage]} alt={product?.name || 'Product'} width={500} height={500} className="w-full h-96 object-contain" />
             </div>
 
             {/* Thumbnails */}
@@ -214,7 +214,7 @@ function ViewPageContent() {
                     onClick={() => setSelectedImage(index)}
                     className={`flex-shrink-0 w-20 h-20 bg-white rounded-lg p-2 shadow-md transition-all ${selectedImage === index ? 'ring-2 ring-[#FDC93B]' : 'hover:shadow-lg'}`}
                   >
-                    <Image src={image} alt={`${product.name} ${index + 1}`} width={80} height={80} className="w-full h-full object-contain" />
+                    <Image src={image} alt={`${product?.name || 'Product'} ${index + 1}`} width={80} height={80} className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>
@@ -230,7 +230,7 @@ function ViewPageContent() {
           >
             <div className="bg-white rounded-2xl p-8 shadow-xl">
               {/* Category */}
-              <h1 className="text-3xl font-bold text-[#0A1D44] mb-4">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-[#0A1D44] mb-4">{product?.name || 'Product'}</h1>
 
               {/* Price */}
               <div className="mb-6">

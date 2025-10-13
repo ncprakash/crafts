@@ -73,8 +73,8 @@ export default function Cart() {
 
   // Check if product is Polaroid
   const isPolaroid = (item: CartItem) => {
-    const name = item.product.name?.toLowerCase() || "";
-    const category = item.product.category?.name?.toLowerCase() || "";
+    const name = item.product?.name?.toLowerCase() || "";
+    const category = item.product?.category?.name?.toLowerCase() || "";
     return name.includes("polaroid") || category.includes("polaroid");
   };
 

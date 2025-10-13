@@ -68,7 +68,7 @@ export default function HandmadeCollections() {
 
   const filteredProducts = products.filter(product => {
     if (activeCategory === 'All products') return true;
-    return product.category.name === activeCategory;
+    return product.category?.name === activeCategory;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -165,14 +165,14 @@ export default function HandmadeCollections() {
               <div className="flex justify-center mb-4">
                 <Image
                   src={product.cloudinaryImages ? product.cloudinaryImages[0] : '/logo.svg'}
-                  alt={product.name}
+                  alt={product?.name || 'Product'}
                   className="w-24 h-24 object-contain"
                   width={96}
                   height={96}
                 />
               </div>
 
-              <h3 className="text-base font-semibold mb-1">{product.name}</h3>
+              <h3 className="text-base font-semibold mb-1">{product?.name || 'Product'}</h3>
               <p className="text-sm text-gray-600 mb-4 line-clamp-2">{product.description}</p>
 
               <div className="flex justify-between items-center">

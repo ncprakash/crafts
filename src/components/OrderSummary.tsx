@@ -64,7 +64,7 @@ export default function OrderSummary({ cartItems, total }: OrderSummaryProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {item.product.name}
+                    {item.product?.name || 'Product'}
                   </p>
                   <p className="text-sm text-gray-500">
                     Qty: {item.quantity} × {formatCurrency(item.price)}
