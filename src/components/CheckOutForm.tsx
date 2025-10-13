@@ -20,6 +20,7 @@ interface CartItem {
   product: {
     id: string;
     name: string;
+    description?: string;
     category?: {
       name: string;
     };
@@ -99,8 +100,30 @@ export default function CheckoutForm({
         {cartItems.map((item) => {
           const name = item.product?.name?.toLowerCase() || "";
           const category = item.product?.category?.name?.toLowerCase() || "";
-          const isCustomizable = name.includes("polaroid") || name.includes("phone") || 
-                               category.includes("polaroid") || category.includes("phone");
+          const description = item.product?.description?.toLowerCase() || "";
+          
+          // More comprehensive customization detection
+          const isCustomizable = 
+            name.includes("polaroid") || 
+            name.includes("phone") || 
+            name.includes("custom") ||
+            category.includes("polaroid") || 
+            category.includes("phone") ||
+            category.includes("custom") ||
+            description.includes("custom") ||
+            description.includes("personalize");
+
+          // Debug logging
+          console.log("🔍 Checking item for customization:", {
+            itemId: item.id,
+            productName: item.product?.name,
+            categoryName: item.product?.category?.name,
+            productDescription: item.product?.description,
+            name: name,
+            category: category,
+            description: description,
+            isCustomizable: isCustomizable
+          });
 
           if (!isCustomizable) return null;
 
@@ -125,6 +148,22 @@ export default function CheckoutForm({
             </div>
           );
         })}
+
+        {/* Debug Section - Show all cart items */}
+        {cartItems.length > 0 && (
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-3">Debug: All Cart Items</h3>
+            <div className="space-y-2">
+              {cartItems.map((item) => (
+                <div key={`debug-${item.id}`} className="text-sm text-gray-600">
+                  <strong>Product:</strong> {item.product?.name || 'Unknown'} | 
+                  <strong> Category:</strong> {item.product?.category?.name || 'Unknown'} |
+                  <strong> Quantity:</strong> {item.quantity}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Form Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

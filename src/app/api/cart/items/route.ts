@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get cart items with product details
+    // Get cart items with product details including category
     const cartItems = await db.orderItem.findMany({
       where: {
         orderId: cartOrder.id
@@ -52,7 +52,12 @@ export async function GET(request: NextRequest) {
             name: true,
             description: true,
             images: true,
-            stock: true
+            stock: true,
+            category: {
+              select: {
+                name: true
+              }
+            }
           }
         }
       }
@@ -66,6 +71,14 @@ export async function GET(request: NextRequest) {
     const itemCount = cartItems.reduce((sum, item) => {
       return sum + item.quantity;
     }, 0);
+
+    // Debug logging
+    console.log('🛒 Cart items fetched:', cartItems.map(item => ({
+      id: item.id,
+      productName: item.product?.name,
+      categoryName: item.product?.category?.name,
+      quantity: item.quantity
+    })));
 
     return NextResponse.json({
       items: cartItems,
