@@ -117,33 +117,28 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Find and delete the user's cart order
-    const cartOrder = await db.order.findFirst({
+    // 🚨 CRITICAL FIX: Instead of deleting OrderItems (which contain uploaded images),
+    // we should update the order status to 'completed' to preserve the data
+    console.log('🛒 Clearing cart for user:', userId);
+    
+    // Update all cart orders to 'completed' status instead of deleting
+    const updatedOrders = await db.order.updateMany({
       where: {
         userId: userId,
         status: 'cart'
+      },
+      data: {
+        status: 'completed'
       }
     });
 
-    if (cartOrder) {
-      // Delete all cart items
-      await db.orderItem.deleteMany({
-        where: {
-          orderId: cartOrder.id
-        }
-      });
+    console.log('✅ Updated orders status to completed:', updatedOrders.count);
 
-      // Delete the cart order
-      await db.order.delete({
-        where: {
-          id: cartOrder.id
-        }
-      });
-
-      console.log('Server-side cart cleared for user:', session.user.id);
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Cart cleared successfully',
+      updatedOrders: updatedOrders.count
+    });
 
   } catch (error) {
     console.error('Error clearing cart:', error);
