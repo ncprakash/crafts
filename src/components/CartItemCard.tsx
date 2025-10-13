@@ -13,6 +13,7 @@ interface CartItem {
     name: string;
     description: string;
     images: string;
+    cloudinaryImages?: string[]; // Add cloudinaryImages field
     stock: number;
   };
 }
@@ -44,6 +45,29 @@ export default function CartItemCard({
     }).format(amount);
   };
 
+  // Enhanced image source logic with multiple fallbacks
+  const getImageSrc = () => {
+    // First try cloudinaryImages array
+    if (item.product?.cloudinaryImages && item.product.cloudinaryImages.length > 0) {
+      const firstCloudinaryImage = item.product.cloudinaryImages[0];
+      if (firstCloudinaryImage && firstCloudinaryImage.trim() !== '') {
+        return firstCloudinaryImage;
+      }
+    }
+    
+    // Then try images string field
+    if (item.product?.images) {
+      const imagesArray = item.product.images.split(',');
+      const firstImage = imagesArray[0];
+      if (firstImage && firstImage.trim() !== '') {
+        return firstImage;
+      }
+    }
+    
+    // Fallback to logo
+    return '/logo.svg';
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -58,7 +82,7 @@ export default function CartItemCard({
           <div className="relative flex-shrink-0">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-2 border border-gray-200">
               <Image
-                src={imageError || !item.product?.images ? '/logo.svg' : (item.product.images.split(',')[0] || '/logo.svg')}
+                src={imageError || !getImageSrc() ? '/logo.svg' : getImageSrc()}
                 alt={item.product?.name || 'Product'}
                 width={80}
                 height={80}

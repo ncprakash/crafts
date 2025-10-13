@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
             name: true,
             description: true,
             images: true,
+            cloudinaryImages: true, // Add cloudinaryImages field
             stock: true,
             category: {
               select: {

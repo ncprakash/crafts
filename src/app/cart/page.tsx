@@ -20,6 +20,7 @@ interface CartItem {
     name: string;
     description: string;
     images: string;
+    cloudinaryImages?: string[]; // Add cloudinaryImages field
     stock: number;
     category: {
       name: string;

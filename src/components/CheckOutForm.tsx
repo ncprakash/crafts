@@ -21,11 +21,13 @@ interface CartItem {
     id: string;
     name: string;
     description?: string;
+    images?: string;
+    cloudinaryImages?: string[]; // Add image fields
     category?: {
       name: string;
     };
   };
-   quantity: number;
+  quantity: number;
 }
 
 interface CustomizationData {

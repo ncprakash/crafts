@@ -1,11 +1,14 @@
 // components/OrderSummary.tsx
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface CartItem {
   id: string;
   product: {
     id: string;
     name: string;
+    images?: string;
+    cloudinaryImages?: string[];
   };
   quantity: number;
   price: number;
@@ -25,6 +28,29 @@ export default function OrderSummary({ cartItems, total }: OrderSummaryProps) {
       style: 'currency',
       currency: 'INR',
     }).format(amount);
+  };
+
+  // Enhanced image source logic with multiple fallbacks
+  const getImageSrc = (item: CartItem) => {
+    // First try cloudinaryImages array
+    if (item.product?.cloudinaryImages && item.product.cloudinaryImages.length > 0) {
+      const firstCloudinaryImage = item.product.cloudinaryImages[0];
+      if (firstCloudinaryImage && firstCloudinaryImage.trim() !== '') {
+        return firstCloudinaryImage;
+      }
+    }
+    
+    // Then try images string field
+    if (item.product?.images) {
+      const imagesArray = item.product.images.split(',');
+      const firstImage = imagesArray[0];
+      if (firstImage && firstImage.trim() !== '') {
+        return firstImage;
+      }
+    }
+    
+    // Fallback to logo
+    return '/logo.svg';
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -57,10 +83,14 @@ export default function OrderSummary({ cartItems, total }: OrderSummaryProps) {
           <div className="space-y-4 mb-6">
             {cartItems.map((item) => (
               <div key={item.id} className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
+                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                  <Image
+                    src={getImageSrc(item)}
+                    alt={item.product?.name || 'Product'}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
