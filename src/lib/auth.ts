@@ -104,6 +104,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         token.username = user.username || user.name;
         token.role = user.role || "user";
+        
+        // Debug log to help troubleshoot
+        console.log('JWT token created with ID:', token.id, 'for provider:', account?.provider);
       }
       return token;
     },
@@ -113,6 +116,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.username = token.username as string;
         session.user.role = token.role as string;
+        
+        // Debug log to help troubleshoot
+        console.log('Session created with user ID:', session.user.id);
       }
       return session;
     },

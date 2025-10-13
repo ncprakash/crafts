@@ -72,6 +72,21 @@ export async function POST(request: NextRequest) {
 
     console.log('Final User ID:', userId);
 
+    // Verify user exists in database before proceeding
+    const userExists = await db.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!userExists) {
+      console.error('User not found in database:', userId);
+      return NextResponse.json(
+        { error: 'User account not found. Please sign in again.' },
+        { status: 404 }
+      );
+    }
+
+    console.log('User verified:', userExists.email);
+
     // Get or create user's cart order
     let cartOrder = await db.order.findFirst({
       where: {
