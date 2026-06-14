@@ -5,7 +5,6 @@ import { Metadata } from "next";
 import { Toaster } from 'react-hot-toast';
 import SessionProvider from "@/components/SessionProvider";
 import LayoutContent from "@/components/LayoutContent";
-import { auth } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart-context";
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,19 +24,11 @@ const geistMono = Geist_Mono({
 
 
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let session;
-  try {
-    session = await auth();
-  } catch (error) {
-    console.error('Session error:', error);
-    session = null;
-  }
-  
   return (
     <html lang="en">
       <head>

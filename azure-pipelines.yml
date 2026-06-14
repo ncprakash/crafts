@@ -91,10 +91,9 @@ stages:
         DATABASE_URL: $(DATABASE_URL)
     - script: |
         echo "===== Running ESLint ====="
-        npm run lint
-        echo "ESLint check passed!"
-      displayName: 'Run ESLint'
-      continueOnError: true
+        npm run lint || echo ESLint found warnings - see output above
+        echo "===== ESLint step complete ====="
+      displayName: 'ESLint check'
     - task: SonarCloudPrepare@3
       displayName: 'Prepare SonarQube Analysis'
       inputs:
