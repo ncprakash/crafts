@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Heart, Star, Users, Award, Sparkles, Target } from 'lucide-react';
+import { Heart, Star, Users, Award, Target } from 'lucide-react';
 
 export default function AboutPage() {
   return (

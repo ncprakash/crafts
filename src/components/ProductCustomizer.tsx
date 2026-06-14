@@ -185,15 +185,6 @@ const ProductCustomizer: React.FC<ProductCustomizerProps> = ({
 
   return (
     <div className="bg-[#faf9f7] rounded-xl p-6 border border-gray-100 space-y-6">
-      {/* Debug Info */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-        <div className="text-xs text-yellow-800 font-mono space-y-1">
-          <div><strong>Order ID:</strong> {orderId}</div>
-          <div><strong>OrderItem ID:</strong> {itemId}</div>
-          <div><strong>Database Status:</strong> {uploadedImages.length} images saved</div>
-        </div>
-      </div>
-
       {productType === "polaroid" && (
         <>
           <div>

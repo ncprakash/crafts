@@ -18,21 +18,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials: Record<string, string>) {
-        if (!credentials?.email || !credentials?.password) return null;
+      async authorize(credentials) {
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+        if (!email || !password) return null;
 
         try {
           let user = await db.user.findUnique({
-            where: { email: credentials.email },
+            where: { email },
           });
 
           // Create a new user if not found
           if (!user) {
-            const hashedPassword = await bcrypt.hash(credentials.password, 10);
+            const hashedPassword = await bcrypt.hash(password, 10);
             user = await db.user.create({
               data: {
-                email: credentials.email,
-                username: credentials.email.split("@")[0],
+                email,
+                username: email.split("@")[0],
                 password: hashedPassword,
                 role: "user",
                 isVerified: true,
@@ -42,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           // Verify password
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          const isPasswordValid = await bcrypt.compare(password, user.password);
           if (!isPasswordValid) return null;
 
           if (!user.isVerified) throw new Error("Please verify your email before signing in");

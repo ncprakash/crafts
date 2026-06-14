@@ -87,8 +87,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Vercel optimizations
-  output: 'standalone',
+  // Use standalone output only for Docker builds (set DOCKER_BUILD=true in Dockerfile)
+  // Vercel uses its own output system and does not need standalone mode
+  output: process.env.DOCKER_BUILD === 'true' ? 'standalone' : undefined,
   poweredByHeader: false,
   compress: true,
   // Increase function timeout for API routes

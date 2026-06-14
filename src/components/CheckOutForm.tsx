@@ -139,22 +139,6 @@ export default function CheckoutForm({
           );
         })}
 
-        {/* Debug Section - Show all cart items */}
-        {cartItems.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-3">Debug: All Cart Items</h3>
-            <div className="space-y-2">
-              {cartItems.map((item) => (
-                <div key={`debug-${item.id}`} className="text-sm text-gray-600">
-                  <strong>Product:</strong> {item.product?.name || 'Unknown'} | 
-                  <strong> Category:</strong> {item.product?.category?.name || 'Unknown'} |
-                  <strong> Quantity:</strong> {item.quantity}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Form Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

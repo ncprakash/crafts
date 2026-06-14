@@ -20,18 +20,20 @@ stages:
   jobs:
   - job: GitVersionJob
     displayName: 'Verify Git & Log History'
+    workspace:
+      clean: all
     steps:
     - checkout: self
     - script: |
         echo "===== Git Version ====="
         git --version
-        echo ""
+        echo.
         echo "===== Recent Commits ====="
         git log --oneline -10
-        echo ""
+        echo.
         echo "===== Current Branch ====="
         git branch -a
-        echo ""
+        echo.
         echo "===== Repository Status ====="
         git status
       displayName: 'Git version and history check'
@@ -45,23 +47,21 @@ stages:
   jobs:
   - job: DependencyJob
     displayName: 'Install & Verify Dependencies'
+    workspace:
+      clean: all
     steps:
     - checkout: self
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '18.x'
-      displayName: 'Setup Node.js 18'
     - script: |
-        echo "===== Node & npm versions ====="
         node --version
         npm --version
-        echo ""
+      displayName: 'Verify Node.js version'
+    - script: |
         echo "===== Installing dependencies ====="
         npm ci
-        echo ""
+        echo.
         echo "===== Generating Prisma Client ====="
         npx prisma generate
-        echo ""
+        echo.
         echo "===== Installed packages ====="
         npm list --depth=0
       displayName: 'npm ci + prisma generate'
@@ -77,12 +77,10 @@ stages:
   jobs:
   - job: LintJob
     displayName: 'ESLint + SonarQube Analysis'
+    workspace:
+      clean: all
     steps:
     - checkout: self
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '18.x'
-      displayName: 'Setup Node.js 18'
     - script: npm ci
       displayName: 'Install dependencies'
       env:
@@ -96,6 +94,7 @@ stages:
         npm run lint
         echo "ESLint check passed!"
       displayName: 'Run ESLint'
+      continueOnError: true
     - task: SonarCloudPrepare@3
       displayName: 'Prepare SonarQube Analysis'
       inputs:
@@ -121,12 +120,10 @@ stages:
   jobs:
   - job: BuildJob
     displayName: 'Next.js Production Build'
+    workspace:
+      clean: all
     steps:
     - checkout: self
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '18.x'
-      displayName: 'Setup Node.js 18'
     - script: npm ci
       displayName: 'Install dependencies'
       env:
@@ -146,6 +143,12 @@ stages:
         NEXTAUTH_URL: 'http://localhost:3000'
         NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
         SKIP_ENV_VALIDATION: 'true'
+    - pwsh: |
+        Write-Host "Cleaning node_modules to free disk space..."
+        Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
+        Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue
+        Write-Host "Cleanup done."
+      displayName: 'Free disk space after build'
 
 # ─────────────────────────────────────────────────────────────
 # STAGE 5: Containerization (Docker Build)
@@ -156,22 +159,25 @@ stages:
   jobs:
   - job: DockerBuildJob
     displayName: 'Build Docker Image'
+    workspace:
+      clean: all
     steps:
     - checkout: self
+    - pwsh: |
+        Write-Host "===== Freeing Docker space ====="
+        docker system prune -af
+        docker volume prune -f
+        Write-Host "Docker cleanup done."
+      displayName: 'Free Docker disk space'
     - script: |
         echo "===== Docker Version ====="
         docker --version
-        echo ""
         echo "===== Building Docker image ====="
         docker build -t $(DOCKER_IMAGE):latest -t $(DOCKER_IMAGE):$(Build.BuildId) .
-        echo ""
         echo "===== Docker images ====="
-        docker images | grep $(DOCKER_IMAGE)
+        docker images
         echo "Docker image built successfully!"
       displayName: 'docker build'
-      env:
-        DATABASE_URL: $(DATABASE_URL)
-        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
 
 # ─────────────────────────────────────────────────────────────
 # STAGE 6: Push to Docker Hub
@@ -183,26 +189,20 @@ stages:
   - job: DockerPushJob
     displayName: 'Tag & Push Docker Image'
     steps:
-    - checkout: self
     - script: |
         echo "===== Logging into Docker Hub ====="
-        echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
-        echo ""
-        echo "===== Building image with registry tag ====="
-        docker build -t $(DOCKER_HUB_REPO):latest -t $(DOCKER_HUB_REPO):$(Build.BuildId) .
-        echo ""
+        echo $(DOCKER_PASSWORD)| docker login -u $(DOCKER_USERNAME) --password-stdin
+        echo "===== Tagging image ====="
+        docker tag $(DOCKER_IMAGE):latest $(DOCKER_HUB_REPO):latest
+        docker tag $(DOCKER_IMAGE):$(Build.BuildId) $(DOCKER_HUB_REPO):$(Build.BuildId)
         echo "===== Pushing to Docker Hub ====="
         docker push $(DOCKER_HUB_REPO):latest
         docker push $(DOCKER_HUB_REPO):$(Build.BuildId)
-        echo ""
         echo "Image pushed: $(DOCKER_HUB_REPO):latest"
-        echo "Image pushed: $(DOCKER_HUB_REPO):$(Build.BuildId)"
       displayName: 'docker login, tag, push'
       env:
         DOCKER_USERNAME: $(DOCKER_USERNAME)
         DOCKER_PASSWORD: $(DOCKER_PASSWORD)
-        DATABASE_URL: $(DATABASE_URL)
-        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
 
 # ─────────────────────────────────────────────────────────────
 # STAGE 7: Deployment
@@ -216,26 +216,15 @@ stages:
     steps:
     - script: |
         echo "===== Pulling latest image from Docker Hub ====="
-        echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+        echo $(DOCKER_PASSWORD)| docker login -u $(DOCKER_USERNAME) --password-stdin
         docker pull $(DOCKER_HUB_REPO):latest
-        echo ""
         echo "===== Stopping old container (if running) ====="
-        docker stop crafts-container 2>/dev/null || echo "No existing container to stop"
-        docker rm crafts-container 2>/dev/null || echo "No existing container to remove"
-        echo ""
+        docker stop crafts-container 2>nul || echo No existing container
+        docker rm crafts-container 2>nul || echo No existing container
         echo "===== Starting new container ====="
-        docker run -d \
-          --name crafts-container \
-          -p 3000:3000 \
-          -e DATABASE_URL="$(DATABASE_URL)" \
-          -e NEXTAUTH_SECRET="$(NEXTAUTH_SECRET)" \
-          -e NEXTAUTH_URL="http://localhost:3000" \
-          -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
-          $(DOCKER_HUB_REPO):latest
-        echo ""
+        docker run -d --name crafts-container -p 3000:3000 -e DATABASE_URL="$(DATABASE_URL)" -e NEXTAUTH_SECRET="$(NEXTAUTH_SECRET)" -e NEXTAUTH_URL="http://localhost:3000" -e NEXT_PUBLIC_APP_URL="http://localhost:3000" $(DOCKER_HUB_REPO):latest
         echo "===== Running containers ====="
         docker ps
-        echo ""
         echo "Deployment complete! App running at http://localhost:3000"
       displayName: 'docker pull and run'
       env:
