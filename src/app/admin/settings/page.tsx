@@ -85,17 +85,13 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // API call to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      console.log('Settings saved:', settings);
-    } catch (error) {
-      console.error('Error saving settings:', error);
+      await new Promise(resolve => setTimeout(resolve, 1000));
     } finally {
       setSaving(false);
     }
   };
 
-  const updateSetting = (section: keyof SettingsData, key: string, value: any) => {
+  const updateSetting = (section: keyof SettingsData, key: string, value: string | number | boolean) => {
     setSettings(prev => ({
       ...prev,
       [section]: {

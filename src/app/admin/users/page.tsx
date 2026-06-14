@@ -58,9 +58,9 @@ export default function UsersPage() {
       }
       
       const data = await response.json();
-      
-      // Transform API data to match User interface
-      const transformedUsers: User[] = data.map((user: any) => ({
+
+      interface ApiUser { id: number; username: string; email: string; role?: string; isVerified: boolean; createdAt?: string; updatedAt?: string; phone_num?: string; }
+      const transformedUsers: User[] = data.map((user: ApiUser) => ({
         id: user.id.toString(),
         username: user.username,
         email: user.email,

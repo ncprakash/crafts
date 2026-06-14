@@ -1,6 +1,5 @@
 // app/api/auth/flutter-signin/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { signIn } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcrypt";
 
@@ -47,16 +46,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Sign in with NextAuth
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    // Return success with user data
-    const { password: _, ...userWithoutPassword } = user;
-
     return NextResponse.json(
       {
         message: "Sign in successful",
@@ -70,10 +59,10 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Flutter Sign-in Error:", error);
     return NextResponse.json(
-      { message: "Internal server error", error: error.message },
+      { message: "Internal server error", error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }

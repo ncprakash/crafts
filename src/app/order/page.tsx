@@ -1,5 +1,34 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayError {
+  error: { description: string };
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  prefill: { name: string; email: string; contact: string };
+  notes: { address: string };
+  theme: { color: string };
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => { open: () => void; on: (event: string, handler: (response: RazorpayError) => void) => void };
+  }
+}
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -225,8 +254,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleRazorpayPayment = async (orderResult: any) => {
-    if (!(window as any).Razorpay) {
+  const handleRazorpayPayment = async (orderResult: { razorpayOrder: { amount: number; currency: string; id: string } }) => {
+    if (!window.Razorpay) {
       setError('Razorpay payment gateway not loaded. Please try again.');
       return;
     }
@@ -238,7 +267,7 @@ export default function CheckoutPage() {
       name: 'Gunnal Crafts',
       description: 'Order Payment',
       order_id: orderResult.razorpayOrder.id,
-      handler: async function (response: any) {
+      handler: async function (response: RazorpayResponse) {
         try {
           // Verify payment on server
           const verificationResponse = await fetch('/api/payment/verify', {
@@ -282,8 +311,8 @@ export default function CheckoutPage() {
       },
     };
 
-    const razorpay = new (window as any).Razorpay(options);
-    razorpay.on('payment.failed', function (response: any) {
+    const razorpay = new window.Razorpay(options);
+    razorpay.on('payment.failed', function (response: RazorpayError) {
       setError(`Payment failed: ${response.error.description}. Please try again.`);
     });
     razorpay.open();
@@ -427,7 +456,9 @@ export default function CheckoutPage() {
 }
 
 // Icons
-function ShieldCheckIcon(props: any) {
+interface IconProps extends React.SVGProps<SVGSVGElement> {}
+
+function ShieldCheckIcon(props: IconProps) {
   return (
     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -435,7 +466,7 @@ function ShieldCheckIcon(props: any) {
   );
 }
 
-function LockClosedIcon(props: any) {
+function LockClosedIcon(props: IconProps) {
   return (
     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -443,7 +474,7 @@ function LockClosedIcon(props: any) {
   );
 }
 
-function DevicePhoneMobileIcon(props: any) {
+function DevicePhoneMobileIcon(props: IconProps) {
   return (
     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />

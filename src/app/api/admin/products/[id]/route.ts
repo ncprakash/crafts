@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  context:any 
+  context: { params: { id: string } }
 ) {
   try {
     const { id } = context.params;
@@ -26,7 +26,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: any 
+  context: { params: { id: string } }
 ) {
   const { id } = context.params;
 
@@ -78,7 +78,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  context: any 
+  context: { params: { id: string } }
 ) {
   const { id } = context.params;
 

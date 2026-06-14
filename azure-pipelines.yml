@@ -1,0 +1,245 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  DOCKER_IMAGE: 'crafts-app'
+  DOCKER_HUB_REPO: '$(DOCKER_USERNAME)/crafts-app'
+
+stages:
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 1: Git Version Check
+# ─────────────────────────────────────────────────────────────
+- stage: GitVersion
+  displayName: 'Stage 1 - Git Version Check'
+  jobs:
+  - job: GitVersionJob
+    displayName: 'Verify Git & Log History'
+    steps:
+    - checkout: self
+    - script: |
+        echo "===== Git Version ====="
+        git --version
+        echo ""
+        echo "===== Recent Commits ====="
+        git log --oneline -10
+        echo ""
+        echo "===== Current Branch ====="
+        git branch -a
+        echo ""
+        echo "===== Repository Status ====="
+        git status
+      displayName: 'Git version and history check'
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 2: Dependency Check
+# ─────────────────────────────────────────────────────────────
+- stage: DependencyCheck
+  displayName: 'Stage 2 - Dependency Check'
+  dependsOn: GitVersion
+  jobs:
+  - job: DependencyJob
+    displayName: 'Install & Verify Dependencies'
+    steps:
+    - checkout: self
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Setup Node.js 18'
+    - script: |
+        echo "===== Node & npm versions ====="
+        node --version
+        npm --version
+        echo ""
+        echo "===== Installing dependencies ====="
+        npm ci
+        echo ""
+        echo "===== Generating Prisma Client ====="
+        npx prisma generate
+        echo ""
+        echo "===== Installed packages ====="
+        npm list --depth=0
+      displayName: 'npm ci + prisma generate'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 3: Code Quality Check (ESLint + SonarQube)
+# ─────────────────────────────────────────────────────────────
+- stage: CodeQuality
+  displayName: 'Stage 3 - Code Quality Check'
+  dependsOn: DependencyCheck
+  jobs:
+  - job: LintJob
+    displayName: 'ESLint + SonarQube Analysis'
+    steps:
+    - checkout: self
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Setup Node.js 18'
+    - script: npm ci
+      displayName: 'Install dependencies'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+    - script: npx prisma generate
+      displayName: 'Generate Prisma client'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+    - script: |
+        echo "===== Running ESLint ====="
+        npm run lint
+        echo "ESLint check passed!"
+      displayName: 'Run ESLint'
+    - task: SonarCloudPrepare@3
+      displayName: 'Prepare SonarQube Analysis'
+      inputs:
+        SonarCloud: 'SonarCloud'
+        organization: '$(SONAR_ORGANIZATION)'
+        scannerMode: 'CLI'
+        configFile: 'sonar-project.properties'
+        extraProperties: |
+          sonar.projectKey=$(SONAR_PROJECT_KEY)
+    - task: SonarCloudAnalyze@3
+      displayName: 'Run SonarQube Analysis'
+    - task: SonarCloudPublish@3
+      displayName: 'Publish SonarQube Quality Gate'
+      inputs:
+        pollingTimeoutSec: '300'
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 4: Application Build
+# ─────────────────────────────────────────────────────────────
+- stage: AppBuild
+  displayName: 'Stage 4 - Application Build'
+  dependsOn: CodeQuality
+  jobs:
+  - job: BuildJob
+    displayName: 'Next.js Production Build'
+    steps:
+    - checkout: self
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Setup Node.js 18'
+    - script: npm ci
+      displayName: 'Install dependencies'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+    - script: npx prisma generate
+      displayName: 'Generate Prisma client'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+    - script: |
+        echo "===== Building Next.js application ====="
+        npm run build
+        echo "Build completed successfully!"
+      displayName: 'npm run build'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
+        NEXTAUTH_URL: 'http://localhost:3000'
+        NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
+        SKIP_ENV_VALIDATION: 'true'
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 5: Containerization (Docker Build)
+# ─────────────────────────────────────────────────────────────
+- stage: Containerize
+  displayName: 'Stage 5 - Containerization'
+  dependsOn: AppBuild
+  jobs:
+  - job: DockerBuildJob
+    displayName: 'Build Docker Image'
+    steps:
+    - checkout: self
+    - script: |
+        echo "===== Docker Version ====="
+        docker --version
+        echo ""
+        echo "===== Building Docker image ====="
+        docker build -t $(DOCKER_IMAGE):latest -t $(DOCKER_IMAGE):$(Build.BuildId) .
+        echo ""
+        echo "===== Docker images ====="
+        docker images | grep $(DOCKER_IMAGE)
+        echo "Docker image built successfully!"
+      displayName: 'docker build'
+      env:
+        DATABASE_URL: $(DATABASE_URL)
+        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 6: Push to Docker Hub
+# ─────────────────────────────────────────────────────────────
+- stage: PushToDockerHub
+  displayName: 'Stage 6 - Push to Docker Hub'
+  dependsOn: Containerize
+  jobs:
+  - job: DockerPushJob
+    displayName: 'Tag & Push Docker Image'
+    steps:
+    - checkout: self
+    - script: |
+        echo "===== Logging into Docker Hub ====="
+        echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+        echo ""
+        echo "===== Building image with registry tag ====="
+        docker build -t $(DOCKER_HUB_REPO):latest -t $(DOCKER_HUB_REPO):$(Build.BuildId) .
+        echo ""
+        echo "===== Pushing to Docker Hub ====="
+        docker push $(DOCKER_HUB_REPO):latest
+        docker push $(DOCKER_HUB_REPO):$(Build.BuildId)
+        echo ""
+        echo "Image pushed: $(DOCKER_HUB_REPO):latest"
+        echo "Image pushed: $(DOCKER_HUB_REPO):$(Build.BuildId)"
+      displayName: 'docker login, tag, push'
+      env:
+        DOCKER_USERNAME: $(DOCKER_USERNAME)
+        DOCKER_PASSWORD: $(DOCKER_PASSWORD)
+        DATABASE_URL: $(DATABASE_URL)
+        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
+
+# ─────────────────────────────────────────────────────────────
+# STAGE 7: Deployment
+# ─────────────────────────────────────────────────────────────
+- stage: Deploy
+  displayName: 'Stage 7 - Deployment'
+  dependsOn: PushToDockerHub
+  jobs:
+  - job: DeployJob
+    displayName: 'Deploy Container'
+    steps:
+    - script: |
+        echo "===== Pulling latest image from Docker Hub ====="
+        echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+        docker pull $(DOCKER_HUB_REPO):latest
+        echo ""
+        echo "===== Stopping old container (if running) ====="
+        docker stop crafts-container 2>/dev/null || echo "No existing container to stop"
+        docker rm crafts-container 2>/dev/null || echo "No existing container to remove"
+        echo ""
+        echo "===== Starting new container ====="
+        docker run -d \
+          --name crafts-container \
+          -p 3000:3000 \
+          -e DATABASE_URL="$(DATABASE_URL)" \
+          -e NEXTAUTH_SECRET="$(NEXTAUTH_SECRET)" \
+          -e NEXTAUTH_URL="http://localhost:3000" \
+          -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
+          $(DOCKER_HUB_REPO):latest
+        echo ""
+        echo "===== Running containers ====="
+        docker ps
+        echo ""
+        echo "Deployment complete! App running at http://localhost:3000"
+      displayName: 'docker pull and run'
+      env:
+        DOCKER_USERNAME: $(DOCKER_USERNAME)
+        DOCKER_PASSWORD: $(DOCKER_PASSWORD)
+        DATABASE_URL: $(DATABASE_URL)
+        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)

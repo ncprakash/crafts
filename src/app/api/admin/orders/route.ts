@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updateData: any = {};
+    const updateData: { status?: string; paymentStatus?: string; trackingNumber?: string } = {};
     if (status) updateData.status = status;
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
     if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;

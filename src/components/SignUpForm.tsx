@@ -85,8 +85,7 @@ const SignUpForm = () => {
         toast.error(errorData?.message || 'Registration failed');
         setIsLoading(false);
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error('Something went wrong. Please try again.');
       setIsLoading(false);
     }
@@ -96,8 +95,7 @@ const SignUpForm = () => {
     try {
       setIsLoading(true);
       await signIn("google", { callbackUrl: "/dashboard" });
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error('Google sign in failed. Please try again.');
       setIsLoading(false);
     }

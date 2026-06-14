@@ -68,13 +68,11 @@ const SignInForm = () => {
 
       if (result?.error) {
         toast.error(result.error);
-        console.log(result.error);
         setIsLoading(false);
       } else if (result?.ok) {
         toast.success('Signed in successfully!');
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error('Something went wrong. Please try again.');
       setIsLoading(false);
     }
@@ -84,8 +82,7 @@ const SignInForm = () => {
     try {
       setIsLoading(true);
       await signIn("google", { callbackUrl: "/dashboard" });
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error('Google sign in failed. Please try again.');
       setIsLoading(false);
     }

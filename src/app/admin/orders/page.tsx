@@ -55,6 +55,34 @@ interface Order {
   };
 }
 
+interface OrderRow {
+  orderId: string;
+  userId: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  shippingAddress: string;
+  total: number;
+  status: Order['status'];
+  paymentStatus: Order['paymentStatus'];
+  paymentId?: string;
+  razorpayOrderId?: string;
+  trackingNumber?: string;
+  orderDate: string;
+  updatedAt: string;
+  username: string;
+  userEmail: string;
+  orderItemId: string;
+  productId: string;
+  quantity: number;
+  itemPrice: number;
+  productName: string;
+  images: string;
+  cloudinaryImages?: string;
+  phoneType?: string;
+  imageUrls?: string;
+}
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -75,8 +103,7 @@ export default function OrdersPage() {
   useEffect(() => {
     // Check if user is authenticated and is an admin
     if (status === 'authenticated') {
-      const user = session?.user as any;
-      if (user?.role !== 'admin') {
+      if (session?.user?.role !== 'admin') {
         // Redirect non-admin users
         router.push('/');
         return;
@@ -101,12 +128,10 @@ export default function OrdersPage() {
       if (!response.ok) throw new Error('Failed to fetch orders');
   
       const data = await response.json();
-      console.log(data);
-  
-      // Group by orderId
+
       const ordersMap: Record<string, Order & { items: OrderItem[] }> = {};
-  
-      data.forEach((row: any) => {
+
+      data.forEach((row: OrderRow) => {
         if (!ordersMap[row.orderId]) {
           ordersMap[row.orderId] = {
             id: row.orderId,
@@ -523,9 +548,11 @@ export default function OrdersPage() {
                               <div className="flex flex-wrap gap-1">
                                 {item.imageUrls.map((url, idx) => (
                                   <div key={idx} className="relative group">
-                                    <Image 
-                                      src={url} 
-                                      alt={`Custom upload ${idx + 1}`} 
+                                    <Image
+                                      src={url}
+                                      alt={`Custom upload ${idx + 1}`}
+                                      width={40}
+                                      height={40}
                                       className="h-10 w-10 object-cover rounded-md border border-gray-200"
                                     />
                                     <span className="absolute -top-1 -right-1 bg-white text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center border border-gray-200">

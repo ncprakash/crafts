@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 
 interface CartItem {
   id: string;
@@ -12,9 +11,16 @@ interface CartItem {
   productId: string;
 }
 
+interface CartProduct {
+  id: string;
+  name: string;
+  price: number | string;
+  images?: string;
+}
+
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: any) => void;
+  addToCart: (product: CartProduct) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -26,7 +32,6 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const { data: session } = useSession();
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -41,7 +46,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: any) => {
+  const addToCart = (product: CartProduct) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.productId === product.id);
       
@@ -89,7 +94,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems([]);
     // Also clear localStorage immediately
     localStorage.removeItem('cart');
-    console.log('Cart cleared from context and localStorage');
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);

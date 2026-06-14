@@ -49,27 +49,19 @@ function DashboardPageContent() {
   useEffect(() => {
     async function fetchOrders() {
       if (!session?.user?.email) {
-        console.log("No user email available");
         setLoadingOrders(false);
         return;
       }
-  
+
       try {
-        // Send email as query param to API
         const res = await fetch(`/api/get-orders?email=${encodeURIComponent(session.user.email)}`);
-  
+
         if (!res.ok) {
-          console.error('Failed to fetch orders, status:', res.status);
           throw new Error('Failed to fetch orders');
         }
-  
+
         const data = await res.json();
-        console.log("API Response:", data);
-  
-        // Assuming API returns { data: [...] }
         const userOrders: Order[] = Array.isArray(data.data) ? data.data : [];
-  
-        console.log("User orders:", userOrders);
         setOrders(userOrders);
       } catch (err) {
         console.error('Error fetching orders:', err);

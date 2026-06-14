@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials: any) {
+      async authorize(credentials: Record<string, string>) {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
@@ -83,42 +83,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               role: "user",
             },
           });
-          // Store the database ID in the user object for JWT callback
-          (user as any).dbId = newUser.id.toString();
+          user.dbId = newUser.id.toString();
         } else {
-          // Store the database ID in the user object for JWT callback
-          (user as any).dbId = existingUser.id.toString();
+          user.dbId = existingUser.id.toString();
         }
       }
     
       return true;
     },
 
-    async jwt({ token, user, account }: any) {
+    async jwt({ token, user, account }) {
       if (user) {
-        // For Google OAuth users, use the database ID we stored
-        if (account?.provider === "google" && (user as any).dbId) {
-          token.id = (user as any).dbId;
+        if (account?.provider === "google" && user.dbId) {
+          token.id = user.dbId;
         } else {
           token.id = user.id;
         }
-        token.username = user.username || user.name;
+        token.username = user.username || user.name || "";
         token.role = user.role || "user";
-        
-        // Debug log to help troubleshoot
-        console.log('JWT token created with ID:', token.id, 'for provider:', account?.provider);
       }
       return token;
     },
 
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
         session.user.role = token.role as string;
-        
-        // Debug log to help troubleshoot
-        console.log('Session created with user ID:', session.user.id);
       }
       return session;
     },

@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
       // Create order items
       const orderItems = await Promise.all(
-        cartItems.map((item: any) =>
+        cartItems.map((item: { productId: string; quantity: number; price: number }) =>
           db.orderItem.create({
             data: {
               orderId: order.id,
@@ -125,63 +125,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// export async function GET(request: NextRequest) {
-//   try {
-//     const session = await auth();
-    
-//     if (!session?.user?.id) {
-//       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//     }
 
-//     // Get query parameters
-//     const searchParams = request.nextUrl.searchParams;
-//     const status = searchParams.get('status');
-//     const paymentStatus = searchParams.get('paymentStatus');
-
-//     // Build where clause
-//     const whereClause: any = {
-//       userId: parseInt(session.user.id)
-//     };
-
-//     if (status) {
-//       whereClause.status = status;
-//     }
-
-//     if (paymentStatus) {
-//       whereClause.paymentStatus = paymentStatus;
-//     }
-
-//     const orders = await db.order.findMany({
-//       where: whereClause,
-//       include: {
-//         items: {
-//           include: {
-//             product: {
-//               select: {
-//                 id: true,
-//                 name: true,
-//                 images: true,
-//                 slug: true
-//               }
-//             }
-//           }
-//         }
-//       },
-//       orderBy: {
-//         orderDate: 'desc'
-//       }
-//     });
-
-//     return NextResponse.json({ orders });
-
-//   } catch (error) {
-//     console.error('Orders fetch error:', error);
-//     return NextResponse.json(
-//       { error: 'Failed to fetch orders' },
-//       { status: 500 }
-//     );
-//   }
-// }
 export async function GET(req:Request) {
   try {
     const { searchParams } = new URL(req.url);
