@@ -8,7 +8,7 @@ pool:
 
 variables:
   DOCKER_IMAGE: 'crafts-app'
-  DOCKER_HUB_REPO: '$(DOCKER_USERNAME)/crafts-app'
+  DOCKER_HUB_REPO: 'ncprakash/crafts_app'
 
 stages:
 
@@ -108,12 +108,12 @@ stages:
       displayName: 'Prepare SonarQube Analysis'
       continueOnError: true
       inputs:
-        SonarCloud: 'SonarCloud'
-        organization: '$(SONAR_ORGANIZATION)'
+        SonarCloud: 'SonarCloudConnection'
+        organization: 'ncprakash121'
         scannerMode: 'CLI'
         configFile: 'sonar-project.properties'
         extraProperties: |
-          sonar.projectKey=$(SONAR_PROJECT_KEY)
+          sonar.projectKey=ncprakash121_crafts
     - task: SonarCloudAnalyze@3
       displayName: 'Run SonarQube Analysis'
       continueOnError: true
@@ -173,7 +173,7 @@ stages:
   dependsOn: AppBuild
   jobs:
   - job: DockerBuildJob
-    displayName: 'Build Docker Image'
+    displayName: 'Prepare Docker Environment'
     workspace:
       clean: all
     steps:
@@ -183,41 +183,32 @@ stages:
         docker system prune -af
         docker volume prune -f
         Write-Host "Docker cleanup done."
-      displayName: 'Free Docker disk space'
-    - pwsh: |
         Write-Host "===== Docker Version ====="
         docker --version
-        Write-Host "===== Building Docker image ====="
-        docker build -t $(DOCKER_IMAGE):latest -t "$(DOCKER_IMAGE):$(Build.BuildId)" .
-        Write-Host "===== Docker images ====="
-        docker images
-        Write-Host "Docker image built successfully!"
-      displayName: 'docker build'
+      displayName: 'Docker cleanup and version check'
 
 # ─────────────────────────────────────────────────────────────
-# STAGE 6: Push to Docker Hub
+# STAGE 6: Build and Push to Docker Hub
 # ─────────────────────────────────────────────────────────────
 - stage: PushToDockerHub
-  displayName: 'Stage 6 - Push to Docker Hub'
+  displayName: 'Stage 6 - Build and Push to Docker Hub'
   dependsOn: Containerize
   jobs:
   - job: DockerPushJob
-    displayName: 'Tag & Push Docker Image'
+    displayName: 'Build and Push Docker Image'
     steps:
-    - pwsh: |
-        Write-Host "===== Logging into Docker Hub ====="
-        "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
-        Write-Host "===== Tagging image ====="
-        docker tag "$(DOCKER_IMAGE):latest" "$(DOCKER_HUB_REPO):latest"
-        docker tag "$(DOCKER_IMAGE):$(Build.BuildId)" "$(DOCKER_HUB_REPO):$(Build.BuildId)"
-        Write-Host "===== Pushing to Docker Hub ====="
-        docker push "$(DOCKER_HUB_REPO):latest"
-        docker push "$(DOCKER_HUB_REPO):$(Build.BuildId)"
-        Write-Host "Image pushed: $(DOCKER_HUB_REPO):latest"
-      displayName: 'docker login, tag, push'
-      env:
-        DOCKER_USERNAME: $(DOCKER_USERNAME)
-        DOCKER_PASSWORD: $(DOCKER_PASSWORD)
+    - checkout: self
+    - task: Docker@2
+      displayName: 'Build and Push to Docker Hub'
+      inputs:
+        command: buildAndPush
+        containerRegistry: 'DockerHubConnection'
+        repository: 'ncprakash/crafts_app'
+        dockerfile: Dockerfile
+        context: '.'
+        tags: |
+          $(Build.BuildId)
+          latest
 
 # ─────────────────────────────────────────────────────────────
 # STAGE 7: Deployment
@@ -229,10 +220,14 @@ stages:
   - job: DeployJob
     displayName: 'Deploy Container'
     steps:
+    - task: Docker@2
+      displayName: 'Login to Docker Hub'
+      inputs:
+        command: login
+        containerRegistry: 'DockerHubConnection'
     - pwsh: |
         Write-Host "===== Pulling latest image from Docker Hub ====="
-        "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
-        docker pull "$(DOCKER_HUB_REPO):latest"
+        docker pull "ncprakash/crafts_app:latest"
         Write-Host "===== Stopping old container (if running) ====="
         docker stop crafts-container 2>$null
         docker rm crafts-container 2>$null
@@ -242,13 +237,12 @@ stages:
           -e NEXTAUTH_SECRET="$(NEXTAUTH_SECRET)" `
           -e NEXTAUTH_URL="http://localhost:3000" `
           -e NEXT_PUBLIC_APP_URL="http://localhost:3000" `
-          "$(DOCKER_HUB_REPO):latest"
+          "ncprakash/crafts_app:latest"
         Write-Host "===== Running containers ====="
         docker ps
         Write-Host "Deployment complete! App running at http://localhost:3000"
       displayName: 'docker pull and run'
       env:
-        DOCKER_USERNAME: $(DOCKER_USERNAME)
-        DOCKER_PASSWORD: $(DOCKER_PASSWORD)
         DATABASE_URL: $(DATABASE_URL)
         NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
