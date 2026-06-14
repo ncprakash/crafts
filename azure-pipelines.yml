@@ -4,7 +4,7 @@ trigger:
       - main
 
 pool:
-  name: Default
+  name: prakash
 
 variables:
   DOCKER_IMAGE: 'crafts-app'
