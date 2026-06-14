@@ -34,14 +34,10 @@ export const generateVerificationToken = () => {
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {
     if (!isEmailConfigured()) {
-      console.warn('Email configuration missing - cannot send verification email');
       return false;
     }
 
     const appUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-      console.warn('Missing BASE_URL or NEXT_PUBLIC_APP_URL in environment. Using fallback localhost.');
-    }
 
     const baseUrl = appUrl || 'https://crafts-five.vercel.app/'; // replace with your actual domain as fallback
     const verificationUrl = `${baseUrl}/verify?token=${token}`;
@@ -70,7 +66,6 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log('Verification email sent to:', email);
     return true;
   } catch (error) {
     console.error('Email sending error:', error);

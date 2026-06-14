@@ -10,16 +10,12 @@ export async function GET() {
       message: "Database connection successful",
       result: result
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
     return Response.json({
       success: false,
       message: "Database connection failed",
-      error: error.message,
-      code: error.code,
-      details: {
-        name: error.name,
-        stack: error.stack?.split('\n')[0] // First line only for security
-      }
+      error: err.message,
     });
   }
 }

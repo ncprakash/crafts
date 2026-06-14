@@ -24,7 +24,6 @@ export const useAuth = () => {
   const loginWithGoogle = async () => {
     try {
       const res = await signIn("google", { redirect: false, callbackUrl: "/dashboard" });
-      console.log("Google login result:", res); // now you'll see this
       if (res?.url) {
         // manually redirect after successful login
         window.location.href = res.url;

@@ -115,18 +115,6 @@ export default function CheckoutForm({
             description.includes("custom") ||
             description.includes("personalize");
 
-          // Debug logging
-          console.log("🔍 Checking item for customization:", {
-            itemId: item.id,
-            productName: item.product?.name,
-            categoryName: item.product?.category?.name,
-            productDescription: item.product?.description,
-            name: name,
-            category: category,
-            description: description,
-            isCustomizable: isCustomizable
-          });
-
           if (!isCustomizable) return null;
 
           return (

@@ -7,12 +7,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const productName = searchParams.get('productName');
 
-    // Build the where clause
-    const whereClause: any = {
-      status: 'approved' // Only show approved testimonials
+    const whereClause: { status: string; productName?: string } = {
+      status: 'approved',
     };
 
-    // If productName is provided, filter by product
     if (productName) {
       whereClause.productName = productName;
     }
@@ -34,7 +32,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
-    const transformedTestimonials = testimonials.map((testimonial: any) => ({
+    const transformedTestimonials = testimonials.map((testimonial) => ({
       id: testimonial.id,
       customerName: testimonial.user.username,
       customerEmail: testimonial.user.email,

@@ -30,9 +30,9 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, updatedItem });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error updating item:', err);
-    return NextResponse.json({ error: err.message || 'Failed to update item' }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to update item' }, { status: 500 });
   }
 }
 
@@ -54,8 +54,8 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error deleting cart item:', err);
-    return NextResponse.json({ error: err.message || 'Failed to delete item' }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to delete item' }, { status: 500 });
   }
 }

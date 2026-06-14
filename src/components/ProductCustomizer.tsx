@@ -30,12 +30,6 @@ const ProductCustomizer: React.FC<ProductCustomizerProps> = ({
   // Update database with image URLs
   const updateOrderItemInDatabase = async (imageUrls: string[], phoneType?: string) => {
     try {
-      console.log("🔄 Updating database with:", { 
-        orderItemId: itemId, // Use itemId as orderItemId
-        imageUrls, 
-        phoneType 
-      });
-      
       const response = await fetch("/api/orders/updateOrderItem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,7 +46,6 @@ const ProductCustomizer: React.FC<ProductCustomizerProps> = ({
       }
 
       const result = await response.json();
-      console.log("✅ Database update successful:", result);
       return result;
     } catch (error) {
       console.error("❌ Database update error:", error);
@@ -100,7 +93,6 @@ const ProductCustomizer: React.FC<ProductCustomizerProps> = ({
           }
 
           const data = await response.json();
-          console.log("☁️ Cloudinary upload successful:", data.secure_url);
           return data.secure_url;
         })
       );

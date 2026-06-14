@@ -3,7 +3,8 @@ import { db } from "@/lib/db"; // adjust path
 
 export async function GET(
   req: Request,
-   { params }: { params: any }) {
+  { params }: { params: { orderItemId: string } }
+) {
     const { orderItemId } = params;
 
   try {

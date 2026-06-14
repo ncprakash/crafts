@@ -31,9 +31,6 @@ const AdminOrderItem: React.FC<AdminOrderItemProps> = ({ orderItemId }) => {
 
         // Parse the response only once
         const result: OrderItemData[] = await response.json();
-        console.log(result);
-
-        // If you just want the first item:
         setData(result[0] || null);
       } catch (err) {
         console.warn(`Order item ${orderItemId} fetch failed:`, err);

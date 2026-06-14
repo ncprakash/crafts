@@ -58,7 +58,6 @@ function ViewPageContent() {
     try {
       const response = await fetch(`/api/admin/products/${productId}`);
       const data = await response.json();
-      console.log("product-category-name", data.category?.name);
       if (response.ok) setProduct(data);
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -117,8 +116,6 @@ function ViewPageContent() {
       });
   
       const data = await response.json();
-      console.log(response);
-      console.log(data);
       if (response.ok) {
         addToCart(product);
         setToast({

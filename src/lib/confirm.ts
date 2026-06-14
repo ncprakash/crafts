@@ -49,7 +49,6 @@ export const sendPaymentSuccessEmail = async (
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Payment success email sent to ${to}`);
   } catch (error) {
     console.error('Error sending email:', error);
   }

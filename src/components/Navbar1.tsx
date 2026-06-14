@@ -34,23 +34,15 @@ function Navbar1() {
       const data = await response.json();
       if (response.ok) {
         setServerCartCount(data.itemCount || 0);
-        console.log('Navbar: Server cart count updated to:', data.itemCount);
       }
     } catch (error) {
       console.error('Error fetching server cart count:', error);
     }
   };
 
-  // Debug cart counts
-  useEffect(() => {
-    console.log('Navbar: Client cart items:', totalItems);
-    console.log('Navbar: Server cart count:', serverCartCount);
-  }, [totalItems, serverCartCount]);
-
   // Listen for cart cleared events
   useEffect(() => {
     const handleCartCleared = () => {
-      console.log('Navbar: Cart cleared event received, refreshing server cart count');
       fetchServerCartCount();
     };
 

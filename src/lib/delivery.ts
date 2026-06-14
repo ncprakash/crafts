@@ -21,9 +21,6 @@ export const sendEmail = async ({
     },
   });
 
-  console.log('EMAIL_USER:', process.env.EMAIL_USER);
-  console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '******' : undefined);
-
   try {
     await transporter.sendMail({
       from: `"Gunnal Crafts" <${process.env.EMAIL_USER}>`,
@@ -31,7 +28,6 @@ export const sendEmail = async ({
       subject,
       html,
     });
-    console.log('Email sent successfully to', to);
   } catch (err) {
     console.error('Error sending email:', err);
     throw err; // propagate to API route
