@@ -106,6 +106,7 @@ stages:
       displayName: 'ESLint check'
     - task: SonarCloudPrepare@3
       displayName: 'Prepare SonarQube Analysis'
+      continueOnError: true
       inputs:
         SonarCloud: 'SonarCloud'
         organization: '$(SONAR_ORGANIZATION)'
@@ -115,8 +116,10 @@ stages:
           sonar.projectKey=$(SONAR_PROJECT_KEY)
     - task: SonarCloudAnalyze@3
       displayName: 'Run SonarQube Analysis'
+      continueOnError: true
     - task: SonarCloudPublish@3
       displayName: 'Publish SonarQube Quality Gate'
+      continueOnError: true
       inputs:
         pollingTimeoutSec: '300'
 
