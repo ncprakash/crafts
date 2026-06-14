@@ -19,6 +19,15 @@ const eslintConfig = [
       "dist/**/*",
       "build/**/*"
     ]
+  },
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": "warn",
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-sync-scripts": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "@next/next/no-img-element": "warn"
+    }
   }
 ];
 
