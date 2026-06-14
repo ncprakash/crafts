@@ -24,7 +24,7 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Git Version ====="
         git --version
         Write-Host ""
@@ -51,12 +51,12 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Node & npm versions ====="
         node --version
         npm --version
       displayName: 'Verify Node.js version'
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Cleaning npm cache ====="
         npm cache clean --force
         Write-Host "===== Installing dependencies ====="
@@ -82,18 +82,18 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - pwsh: |
+    - powershell: |
         npm cache clean --force
         npm ci
       displayName: 'Install dependencies'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - pwsh: |
+    - powershell: |
         npx prisma generate
       displayName: 'Generate Prisma client'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Running ESLint ====="
         try {
           npm run lint
@@ -136,18 +136,18 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - pwsh: |
+    - powershell: |
         npm cache clean --force
         npm ci
       displayName: 'Install dependencies'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - pwsh: |
+    - powershell: |
         npx prisma generate
       displayName: 'Generate Prisma client'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Building Next.js application ====="
         npm run build
         Write-Host "Build completed successfully!"
@@ -158,7 +158,7 @@ stages:
         NEXTAUTH_URL: 'http://localhost:3000'
         NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
         SKIP_ENV_VALIDATION: 'true'
-    - pwsh: |
+    - powershell: |
         Write-Host "Cleaning node_modules and .next to free disk space..."
         Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
         Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue
@@ -178,7 +178,7 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Freeing Docker space ====="
         docker system prune -af
         docker volume prune -f
@@ -225,7 +225,7 @@ stages:
       inputs:
         command: login
         containerRegistry: 'DockerHubConnection'
-    - pwsh: |
+    - powershell: |
         Write-Host "===== Pulling latest image from Docker Hub ====="
         docker pull "ncprakash/crafts_app:latest"
         Write-Host "===== Stopping old container (if running) ====="
