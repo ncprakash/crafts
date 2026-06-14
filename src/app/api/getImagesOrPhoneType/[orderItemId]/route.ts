@@ -3,9 +3,9 @@ import { db } from "@/lib/db"; // adjust path
 
 export async function GET(
   req: Request,
-  { params }: { params: { orderItemId: string } }
+  { params }: { params: Promise<{ orderItemId: string }> }
 ) {
-    const { orderItemId } = params;
+  const { orderItemId } = await params;
 
   try {
     const orderItems = await db.orderItem.findMany({

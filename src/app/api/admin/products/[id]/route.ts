@@ -3,10 +3,10 @@ import { db } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
 
     const product = await db.product.findUnique({
       where: { id },
@@ -26,9 +26,9 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   try {
     const body = await req.json();
@@ -78,9 +78,9 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   try {
     await db.product.delete({ where: { id } });
