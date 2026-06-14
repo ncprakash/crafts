@@ -13,7 +13,7 @@ variables:
 stages:
 
 # -------------------------------------------------------------
-# STAGE 1: Git Version Check
+# STAGE 1: Git Version Check  (+ free disk space upfront)
 # -------------------------------------------------------------
 - stage: GitVersion
   displayName: 'Stage 1 - Git Version Check'
@@ -24,6 +24,22 @@ stages:
       clean: all
     steps:
     - checkout: self
+    - powershell: |
+        Write-Host "===== Freeing disk space before pipeline run ====="
+        docker system prune -af 2>$null
+        docker volume prune -f 2>$null
+        Write-Host "Docker prune done."
+        # Remove old pipeline build directories (keep current)
+        $workRoot = Split-Path -Parent $env:AGENT_BUILDDIRECTORY
+        if ($workRoot) {
+          Get-ChildItem $workRoot -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -ne $env:AGENT_BUILDDIRECTORY } |
+            ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+        npm cache clean --force 2>$null
+        Write-Host "===== Disk space after cleanup ====="
+        Get-PSDrive C | Select-Object Used,Free
+      displayName: 'Free disk space'
     - powershell: |
         Write-Host "===== Git Version ====="
         git --version
@@ -39,7 +55,7 @@ stages:
       displayName: 'Git version and history check'
 
 # -------------------------------------------------------------
-# STAGE 2: Dependency Check
+# STAGE 2: Dependency Check  (only npm ci in the whole pipeline)
 # -------------------------------------------------------------
 - stage: DependencyCheck
   displayName: 'Stage 2 - Dependency Check'
@@ -57,9 +73,7 @@ stages:
         npm --version
       displayName: 'Verify Node.js version'
     - powershell: |
-        Write-Host "===== Cleaning npm cache ====="
-        npm cache clean --force
-        Write-Host "===== Installing dependencies ====="
+        Write-Host "===== Installing dependencies (once for all stages) ====="
         npm ci
         Write-Host "===== Generating Prisma Client ====="
         npx prisma generate
@@ -71,6 +85,7 @@ stages:
 
 # -------------------------------------------------------------
 # STAGE 3: Code Quality Check (ESLint + SonarQube)
+# NOTE: No workspace clean - reuses node_modules from Stage 2
 # -------------------------------------------------------------
 - stage: CodeQuality
   displayName: 'Stage 3 - Code Quality Check'
@@ -78,21 +93,8 @@ stages:
   jobs:
   - job: LintJob
     displayName: 'ESLint + SonarQube Analysis'
-    workspace:
-      clean: all
     steps:
     - checkout: self
-    - powershell: |
-        npm cache clean --force
-        npm ci
-      displayName: 'Install dependencies'
-      env:
-        DATABASE_URL: $(DATABASE_URL)
-    - powershell: |
-        npx prisma generate
-      displayName: 'Generate Prisma client'
-      env:
-        DATABASE_URL: $(DATABASE_URL)
     - powershell: |
         Write-Host "===== Running ESLint ====="
         try {
@@ -125,6 +127,7 @@ stages:
 
 # -------------------------------------------------------------
 # STAGE 4: Application Build
+# NOTE: No workspace clean - reuses node_modules from Stage 2
 # -------------------------------------------------------------
 - stage: AppBuild
   displayName: 'Stage 4 - Application Build'
@@ -132,21 +135,8 @@ stages:
   jobs:
   - job: BuildJob
     displayName: 'Next.js Production Build'
-    workspace:
-      clean: all
     steps:
     - checkout: self
-    - powershell: |
-        npm cache clean --force
-        npm ci
-      displayName: 'Install dependencies'
-      env:
-        DATABASE_URL: $(DATABASE_URL)
-    - powershell: |
-        npx prisma generate
-      displayName: 'Generate Prisma client'
-      env:
-        DATABASE_URL: $(DATABASE_URL)
     - powershell: |
         Write-Host "===== Building Next.js application ====="
         npm run build
@@ -163,10 +153,11 @@ stages:
         Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
         Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue
         Write-Host "Cleanup done."
+        Get-PSDrive C | Select-Object Used,Free
       displayName: 'Free disk space after build'
 
 # -------------------------------------------------------------
-# STAGE 5: Containerization (Docker Build)
+# STAGE 5: Containerization (Docker cleanup + version check)
 # -------------------------------------------------------------
 - stage: Containerize
   displayName: 'Stage 5 - Containerization'
@@ -179,13 +170,10 @@ stages:
     steps:
     - checkout: self
     - powershell: |
-        Write-Host "===== Freeing Docker space ====="
-        docker system prune -af
-        docker volume prune -f
-        Write-Host "Docker cleanup done."
         Write-Host "===== Docker Version ====="
         docker --version
-      displayName: 'Docker cleanup and version check'
+        Write-Host "Docker environment ready."
+      displayName: 'Docker version check'
 
 # -------------------------------------------------------------
 # STAGE 6: Build and Push to Docker Hub
@@ -239,9 +227,4 @@ stages:
           -e NEXT_PUBLIC_APP_URL="http://localhost:3000" `
           "ncprakash/crafts_app:latest"
         Write-Host "===== Running containers ====="
-        docker ps
-        Write-Host "Deployment complete! App running at http://localhost:3000"
-      displayName: 'docker pull and run'
-      env:
-        DATABASE_URL: $(DATABASE_URL)
-        NEXTAUTH_SECRET: $(NEXTAUTH_SECRET)
+        docker 
