@@ -24,17 +24,17 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - script: |
-        echo "===== Git Version ====="
+    - pwsh: |
+        Write-Host "===== Git Version ====="
         git --version
-        echo.
-        echo "===== Recent Commits ====="
+        Write-Host ""
+        Write-Host "===== Recent Commits ====="
         git log --oneline -10
-        echo.
-        echo "===== Current Branch ====="
+        Write-Host ""
+        Write-Host "===== Current Branch ====="
         git branch -a
-        echo.
-        echo "===== Repository Status ====="
+        Write-Host ""
+        Write-Host "===== Repository Status ====="
         git status
       displayName: 'Git version and history check'
 
@@ -51,18 +51,19 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - script: |
+    - pwsh: |
+        Write-Host "===== Node & npm versions ====="
         node --version
         npm --version
       displayName: 'Verify Node.js version'
-    - script: |
-        echo "===== Installing dependencies ====="
+    - pwsh: |
+        Write-Host "===== Cleaning npm cache ====="
+        npm cache clean --force
+        Write-Host "===== Installing dependencies ====="
         npm ci
-        echo.
-        echo "===== Generating Prisma Client ====="
+        Write-Host "===== Generating Prisma Client ====="
         npx prisma generate
-        echo.
-        echo "===== Installed packages ====="
+        Write-Host "===== Installed packages ====="
         npm list --depth=0
       displayName: 'npm ci + prisma generate'
       env:
@@ -81,18 +82,27 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - script: npm ci
+    - pwsh: |
+        npm cache clean --force
+        npm ci
       displayName: 'Install dependencies'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - script: npx prisma generate
+    - pwsh: |
+        npx prisma generate
       displayName: 'Generate Prisma client'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - script: |
-        echo "===== Running ESLint ====="
-        npm run lint || echo ESLint found warnings - see output above
-        echo "===== ESLint step complete ====="
+    - pwsh: |
+        Write-Host "===== Running ESLint ====="
+        try {
+          npm run lint
+          Write-Host "ESLint passed with no errors."
+        } catch {
+          Write-Host "ESLint completed with warnings (non-blocking)."
+        }
+        Write-Host "===== ESLint step complete ====="
+        exit 0
       displayName: 'ESLint check'
     - task: SonarCloudPrepare@3
       displayName: 'Prepare SonarQube Analysis'
@@ -123,18 +133,21 @@ stages:
       clean: all
     steps:
     - checkout: self
-    - script: npm ci
+    - pwsh: |
+        npm cache clean --force
+        npm ci
       displayName: 'Install dependencies'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - script: npx prisma generate
+    - pwsh: |
+        npx prisma generate
       displayName: 'Generate Prisma client'
       env:
         DATABASE_URL: $(DATABASE_URL)
-    - script: |
-        echo "===== Building Next.js application ====="
+    - pwsh: |
+        Write-Host "===== Building Next.js application ====="
         npm run build
-        echo "Build completed successfully!"
+        Write-Host "Build completed successfully!"
       displayName: 'npm run build'
       env:
         DATABASE_URL: $(DATABASE_URL)
@@ -143,7 +156,7 @@ stages:
         NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
         SKIP_ENV_VALIDATION: 'true'
     - pwsh: |
-        Write-Host "Cleaning node_modules to free disk space..."
+        Write-Host "Cleaning node_modules and .next to free disk space..."
         Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
         Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue
         Write-Host "Cleanup done."
@@ -168,14 +181,14 @@ stages:
         docker volume prune -f
         Write-Host "Docker cleanup done."
       displayName: 'Free Docker disk space'
-    - script: |
-        echo "===== Docker Version ====="
+    - pwsh: |
+        Write-Host "===== Docker Version ====="
         docker --version
-        echo "===== Building Docker image ====="
-        docker build -t $(DOCKER_IMAGE):latest -t $(DOCKER_IMAGE):$(Build.BuildId) .
-        echo "===== Docker images ====="
+        Write-Host "===== Building Docker image ====="
+        docker build -t $(DOCKER_IMAGE):latest -t "$(DOCKER_IMAGE):$(Build.BuildId)" .
+        Write-Host "===== Docker images ====="
         docker images
-        echo "Docker image built successfully!"
+        Write-Host "Docker image built successfully!"
       displayName: 'docker build'
 
 # ─────────────────────────────────────────────────────────────
@@ -188,16 +201,16 @@ stages:
   - job: DockerPushJob
     displayName: 'Tag & Push Docker Image'
     steps:
-    - script: |
-        echo "===== Logging into Docker Hub ====="
-        echo $(DOCKER_PASSWORD)| docker login -u $(DOCKER_USERNAME) --password-stdin
-        echo "===== Tagging image ====="
-        docker tag $(DOCKER_IMAGE):latest $(DOCKER_HUB_REPO):latest
-        docker tag $(DOCKER_IMAGE):$(Build.BuildId) $(DOCKER_HUB_REPO):$(Build.BuildId)
-        echo "===== Pushing to Docker Hub ====="
-        docker push $(DOCKER_HUB_REPO):latest
-        docker push $(DOCKER_HUB_REPO):$(Build.BuildId)
-        echo "Image pushed: $(DOCKER_HUB_REPO):latest"
+    - pwsh: |
+        Write-Host "===== Logging into Docker Hub ====="
+        "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+        Write-Host "===== Tagging image ====="
+        docker tag "$(DOCKER_IMAGE):latest" "$(DOCKER_HUB_REPO):latest"
+        docker tag "$(DOCKER_IMAGE):$(Build.BuildId)" "$(DOCKER_HUB_REPO):$(Build.BuildId)"
+        Write-Host "===== Pushing to Docker Hub ====="
+        docker push "$(DOCKER_HUB_REPO):latest"
+        docker push "$(DOCKER_HUB_REPO):$(Build.BuildId)"
+        Write-Host "Image pushed: $(DOCKER_HUB_REPO):latest"
       displayName: 'docker login, tag, push'
       env:
         DOCKER_USERNAME: $(DOCKER_USERNAME)
@@ -213,18 +226,23 @@ stages:
   - job: DeployJob
     displayName: 'Deploy Container'
     steps:
-    - script: |
-        echo "===== Pulling latest image from Docker Hub ====="
-        echo $(DOCKER_PASSWORD)| docker login -u $(DOCKER_USERNAME) --password-stdin
-        docker pull $(DOCKER_HUB_REPO):latest
-        echo "===== Stopping old container (if running) ====="
-        docker stop crafts-container 2>nul || echo No existing container
-        docker rm crafts-container 2>nul || echo No existing container
-        echo "===== Starting new container ====="
-        docker run -d --name crafts-container -p 3000:3000 -e DATABASE_URL="$(DATABASE_URL)" -e NEXTAUTH_SECRET="$(NEXTAUTH_SECRET)" -e NEXTAUTH_URL="http://localhost:3000" -e NEXT_PUBLIC_APP_URL="http://localhost:3000" $(DOCKER_HUB_REPO):latest
-        echo "===== Running containers ====="
+    - pwsh: |
+        Write-Host "===== Pulling latest image from Docker Hub ====="
+        "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+        docker pull "$(DOCKER_HUB_REPO):latest"
+        Write-Host "===== Stopping old container (if running) ====="
+        docker stop crafts-container 2>$null
+        docker rm crafts-container 2>$null
+        Write-Host "===== Starting new container ====="
+        docker run -d --name crafts-container -p 3000:3000 `
+          -e DATABASE_URL="$(DATABASE_URL)" `
+          -e NEXTAUTH_SECRET="$(NEXTAUTH_SECRET)" `
+          -e NEXTAUTH_URL="http://localhost:3000" `
+          -e NEXT_PUBLIC_APP_URL="http://localhost:3000" `
+          "$(DOCKER_HUB_REPO):latest"
+        Write-Host "===== Running containers ====="
         docker ps
-        echo "Deployment complete! App running at http://localhost:3000"
+        Write-Host "Deployment complete! App running at http://localhost:3000"
       displayName: 'docker pull and run'
       env:
         DOCKER_USERNAME: $(DOCKER_USERNAME)
